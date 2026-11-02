@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<title>LAMB3RT TCG — Étiquettes rapides</title>
+<style>
+*{box-sizing:border-box}
+:root{color-scheme:dark;--gold:#ffc400;--gold-deep:#d99a00;--ink:#080808;--panel:#151515;--line:#343434;--muted:#c0c0c0}
+body{margin:0;background:var(--ink);color:#f8f5eb;font-family:system-ui,Arial,sans-serif}
+header{background:#050505;color:#fff;padding:22px 20px 18px;text-align:center;border-bottom:2px solid var(--gold);box-shadow:0 4px 22px #ffc40018}
+header h1{margin:0 0 5px;font-size:25px;font-weight:900;letter-spacing:2px;text-shadow:0 2px 0 #8d6500}
+header p{margin:0;color:#d7c98f;font-size:13px}
+main{max-width:760px;margin:auto;padding:14px}
+.card{background:linear-gradient(145deg,#191919,#101010);border:1px solid #333;border-radius:16px;padding:17px;margin-bottom:14px;box-shadow:0 6px 20px #0008}
+h2{font-size:17px;margin:0 0 10px;color:var(--gold)}
+.hint{font-size:13px;color:var(--muted);line-height:1.5}
+button{border:1px solid transparent;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:750;cursor:pointer;transition:transform .12s,box-shadow .2s,border-color .2s}
+button:active{transform:scale(.98)}
+.primary{background:linear-gradient(135deg,#ffd84d,var(--gold-deep));color:#111;box-shadow:0 3px 10px #ffc40024}
+.secondary{background:#242424;color:#f8e8a0;border-color:#49402a}
+.danger{background:#2b1717;color:#ffb4b4;border-color:#633232}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
+textarea{width:100%;min-height:85px;border:1px solid #484848;background:#090909;color:#fff;border-radius:11px;padding:12px;font:16px system-ui;outline:none}
+textarea:focus,input:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 2px #ffc40020}
+#micBtn{width:124px;height:124px;flex:0 0 124px;padding:0;border:3px solid var(--gold);border-radius:50%;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(to bottom,#ffc400 0%,#ffc400 46%,#111 46%,#111 54%,#f4f0df 54%,#f4f0df 100%);color:transparent;font-size:0;box-shadow:0 0 0 5px #ffc40017,inset 0 0 0 2px #080808}
+#micBtn::before{content:'🎙️';position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:39px;height:39px;border:3px solid #111;border-radius:50%;background:#f8f3e6;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 2px 8px #0009}
+#micBtn::after{content:'DICTER';position:absolute;bottom:13px;left:0;right:0;color:#111;font-size:10px;font-weight:900;letter-spacing:1.2px;text-align:center;text-shadow:0 1px #fff8}
+#micBtn.is-listening{animation:micPulse 1.2s ease-in-out infinite;box-shadow:0 0 0 5px #ffc40025,0 0 24px #ffc40075,inset 0 0 0 2px #080808}
+#micBtn.is-listening::after{content:'ÉCOUTE…';color:#fff;bottom:12px;text-shadow:0 1px #000}
+@keyframes micPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
+.price-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.chip{display:flex;align-items:center;gap:8px;background:#222;border:1px solid #4b4021;padding:7px 9px;border-radius:9px;font-weight:750;color:#ffe082}
+.chip button{padding:0 5px;background:transparent;color:#ff9a9a}
+.label-grid{display:grid;gap:10px}
+.label{display:grid;grid-template-columns:1fr 1fr;border:1px dashed #8b95a7;background:#fff;color:#111;width:100%;max-width:440px;min-height:88px;align-items:stretch}
+.half{display:flex;align-items:center;justify-content:center;position:relative;min-width:0;border-right:1px dashed #aeb6c4}
+.half:last-child{border-right:0}
+.price{font-family:Arial,sans-serif;font-size:22pt;font-weight:800;white-space:nowrap;letter-spacing:-.7px}
+.currency{font-size:8pt;align-self:flex-end;margin:0 0 22px 3px}
+.notice{padding:10px 12px;background:#2a220f;border:1px solid #6e5718;color:#f8e9b2;border-radius:10px;font-size:13px;line-height:1.45}
+input[type=number],select{padding:8px;border:1px solid #484848;background:#090909;color:#fff;border-radius:8px;font:16px system-ui}
+label{color:#e6d69a}
+footer{text-align:center;font-size:12px;color:#a9a9a9;padding:8px 12px 24px}
+@media(max-width:420px){header{padding:18px 12px}main{padding:10px}.card{padding:14px}#micBtn{width:112px;height:112px;flex-basis:112px}}
+@media(prefers-reduced-motion:reduce){#micBtn.is-listening{animation:none}}
+@media print{
+ body{background:#fff}
+ header,main>.card:not(.preview-card),.no-print,footer{display:none!important}
+ main{padding:0;max-width:none}
+ .preview-card{box-shadow:none;padding:0;margin:0}
+ .label-grid{display:block}
+ .label{width:40mm;height:12mm;min-height:12mm;max-width:none;border:0;border-radius:0;margin:0;break-inside:avoid;page-break-inside:avoid}
+ .half{border-right:1px dashed #999}
+ .price{font-size:22pt}
+ .currency{font-size:8pt;margin-bottom:3mm}
+ .half small{display:none}
+ @page{size:auto;margin:0}
+}
+</style>
+</head>
+<body>
+<header><h1>LAMB3RT TCG</h1><p>Étiquettes rapides · dictée et préparation d’impression</p></header>
+<main>
+<section class="card">
+<h2>1. Dicter ou entrer les prix</h2>
+<p class="hint">Dicte les prix avec de petites pauses naturelles. Vérifie le texte reconnu avant de créer la liste. Les résultats vocaux confirmés sont ajoutés une seule fois.</p>
+<div class="actions no-print">
+<button class="primary" id="micBtn">🎙️ Dicter les prix</button>
+<button class="secondary" id="stopBtn">⏸️ Pause</button>
+</div>
+<textarea id="priceInput" placeholder="Ex. : 120, 78, 35, 50" aria-label="Prix dictés ou saisis"></textarea>
+<div class="actions no-print">
+<button class="primary" id="loadBtn">Créer la liste</button>
+<button class="secondary" id="addBtn">Ajouter à la liste</button>
+<button class="danger" id="clearBtn">Tout effacer</button>
+</div>
+<div id="status" class="hint" aria-live="polite">Prêt. La dictée nécessite un navigateur compatible et l’autorisation du microphone.</div>
+<div id="priceList" class="price-list"></div>
+</section>
+<section class="card">
+<h2>2. Format d’étiquette</h2>
+<p class="hint">Aperçu de deux prix par étiquette de 40 × 12 mm, à couper au milieu. Le format réel devra être validé avec la NIIMBOT D110.</p>
+<div class="actions no-print">
+<label>Police (aperçu) <input id="fontSize" type="number" min="12" max="34" value="22"></label>
+<label>Prix par étiquette <select id="perLabel"><option value="2" selected>2</option><option value="1">1</option></select></label>
+</div>
+</section>
+<section class="card preview-card">
+<h2 class="no-print">3. Aperçu des étiquettes</h2>
+<div id="summary" class="hint no-print">Aucun prix pour le moment.</div>
+<div id="labels" class="label-grid"></div>
+<div class="actions no-print"><button class="primary" id="printBtn">🖨️ Imprimer / aperçu système</button></div>
+<div class="notice no-print" style="margin-top:12px">Important : ce prototype ouvre l’impression du navigateur; il n’envoie pas encore les commandes Bluetooth directement à la D110.</div>
+</section>
+</main>
+<footer>Les prix sont sauvegardés sur cet appareil. La dictée directe nécessite un navigateur compatible et une origine sécurisée HTTPS.</footer>
+<script>
+'use strict';
+
+let prices = [];
+let recognition = null;
+let dictationSession = false;
+let pauseRequested = false;
+let sessionBaseText = '';
+// Les résultats sont conservés par index pour éviter de les ajouter deux fois.
+let finalResultsByIndex = new Map();
+
+const input = document.getElementById('priceInput');
+const status = document.getElementById('status');
+const micBtn = document.getElementById('micBtn');
+
+try {
+  const saved = JSON.parse(localStorage.getItem('lamb3rt_prices_v1') || '[]');
+  if (Array.isArray(saved)) prices = saved.filter(n => typeof n === 'number' && Number.isFinite(n));
+} catch (e) {}
+
+function normalizeWords(text) {
+  return text.toLowerCase()
+    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[‐‑‒–—-]/g, ' ')
+    .replace(/\\bet\\b/g, ' ')
+    .replace(/\\s+/g, ' ')
+    .trim();
+}
+
+function frenchNumberWordsToNumber(phrase) {
+  const s = normalizeWords(phrase);
+  if (!s) return null;
+  const w = s.split(' ');
+  const units = {
+    zero:0, un:1, une:1, deux:2, trois:3, quatre:4, cinq:5, six:6,
+    sept:7, huit:8, neuf:9, dix:10, onze:11, douze:12, treize:13,
+    quatorze:14, quinze:15, seize:16
+  };
+  const tens = {vingt:20, trente:30, quarante:40, cinquante:50};
+  let i = 0, n = 0;
+
+  if (w[i] === 'cent' || w[i] === 'cents') { n = 100; i++; }
+  else if (units[w[i]] !== undefined && w[i+1] === 'cent') { n = units[w[i]] * 100; i += 2; }
+
+  if (w[i] === 'mille') {
+    n = (n || 1) * 1000; i++;
+  }
+
+  if (w[i] === 'quatre' && (w[i+1] === 'vingt' || w[i+1] === 'vingts')) {
+    n += 80; i += 2;
+    if (units[w[i]] !== undefined && units[w[i]] < 10) { n += units[w[i]]; i++; }
+    else if (units[w[i]] !== undefined && units[w[i]] >= 10 && units[w[i]] <= 16) { n += units[w[i]]; i++; }
+  } else if (w[i] === 'soixante') {
+    n += 60; i++;
+    if (w[i] === 'dix') { n += 10; i++; }
+    else if (units[w[i]] !== undefined && units[w[i]] >= 10 && units[w[i]] <= 16) { n += units[w[i]]; i++; }
+    else if (units[w[i]] !== undefined && units[w[i]] < 10) { n += units[w[i]]; i++; }
+  } else if (tens[w[i]] !== undefined) {
+    n += tens[w[i]]; i++;
+    if (units[w[i]] !== undefined && units[w[i]] < 10) { n += units[w[i]]; i++; }
+  } else if (units[w[i]] !== undefined) {
+    n += units[w[i]]; i++;
+  }
+
+  return i === w.length ? n : null;
+}
+
+function parsePrices(text) {
+  const raw = text.trim();
+  if (!raw) return [];
+
+  // D’abord, découper sur les séparateurs explicites. Chaque morceau est
+  // traité indépendamment pour prendre en charge chiffres et nombres en lettres.
+  const chunks = raw
+    .replace(/dollars?|piastres?/gi, ' ')
+    .replace(/\\$/g, ' ')
+    .split(/[;,\\n]+/)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const out = [];
+  for (const chunk of chunks) {
+    const numeric = chunk.match(/^\\s*(\\d+(?:[.,]\\d{1,2})?)\\s*$/);
+    if (numeric) {
+      const value = Number(numeric[1].replace(',', '.'));
+      if (Number.isFinite(value) && value >= 0) out.push(value);
+      continue;
+    }
+
+    // Si le morceau contient plusieurs nombres écrits en chiffres séparés par
+    // des espaces, chacun devient un prix distinct (ex. "65 8 12").
+    if (/^\\s*\\d+(?:\\s+\\d+)+\\s*$/.test(chunk)) {
+      chunk.match(/\\d+/g).forEach(token => out.push(Number(token)));
+      continue;
+    }
+
+    const numericTokens = chunk.match(/\\d+(?:[.,]\\d{1,2})?/g);
+    if (numericTokens && !/[a-z]/i.test(chunk)) {
+      numericTokens.forEach(token => {
+        const value = Number(token.replace(',', '.'));
+        if (Number.isFinite(value) && value >= 0) out.push(value);
+      });
+      continue;
+    }
+
+    const words = normalizeWords(chunk).split(/\\s+/).filter(Boolean);
+    let i = 0;
+    while (i < words.length) {
+      let found = null, end = i;
+      for (let j = Math.min(words.length, i + 5); j > i; j--) {
+        const value = frenchNumberWordsToNumber(words.slice(i, j).join(' '));
+        if (value !== null && value >= 0 && value <= 999999) {
+          found = value; end = j; break;
+        }
+      }
+      if (found !== null) { out.push(found); i = end; }
+      else {
+        // Permet les morceaux mixtes comme "65 huit 12".
+        if (/^\\d+(?:[.,]\\d{1,2})?$/.test(words[i])) {
+          const value = Number(words[i].replace(',', '.'));
+          if (Number.isFinite(value)) out.push(value);
+        }
+        i++;
+      }
+    }
+  }
+  return out;
+}
+
+function money(n) {
+  return Number.isInteger(n) ? String(n) : n.toLocaleString('fr-CA', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function savePrices() {
+  try { localStorage.setItem('lamb3rt_prices_v1', JSON.stringify(prices)); } catch (e) {}
+}
+
+function addFromInput() {
+  const parsed = parsePrices(input.value);
+  if (!parsed.length) { status.textContent = 'Aucun prix détecté. Vérifie le texte.'; return; }
+  prices = prices.concat(parsed);
+  savePrices();
+  input.value = '';
+  sessionBaseText = '';
+  finalResultsByIndex.clear();
+  render();
+  status.textContent = `${parsed.length} prix ajoutés; ${prices.length} au total.`;
+}
+
+function render() {
+  const list = document.getElementById('priceList');
+  list.innerHTML = '';
+  prices.forEach((price, index) => {
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    const span = document.createElement('span');
+    span.textContent = money(price) + ' $';
+    const remove = document.createElement('button');
+    remove.type = 'button'; remove.title = 'Supprimer'; remove.textContent = '×';
+    remove.setAttribute('aria-label', 'Supprimer ' + money(price) + ' dollars');
+    remove.addEventListener('click', () => { prices.splice(index, 1); savePrices(); render(); });
+    chip.append(span, remove);
+    list.appendChild(chip);
+  });
+
+  const per = Number(document.getElementById('perLabel').value);
+  const labels = document.getElementById('labels');
+  labels.innerHTML = '';
+  for (let i = 0; i < prices.length; i += per) {
+    const label = document.createElement('div');
+    label.className = 'label';
+    for (let j = 0; j < per; j++) {
+      const half = document.createElement('div');
+      half.className = 'half';
+      if (prices[i+j] !== undefined) {
+        const p = document.createElement('span'); p.className = 'price'; p.textContent = money(prices[i+j]);
+        const c = document.createElement('span'); c.className = 'currency'; c.textContent = '$';
+        half.append(p, c);
+      }
+      label.appendChild(half);
+    }
+    if (per === 1) label.style.gridTemplateColumns = '1fr';
+    labels.appendChild(label);
+  }
+
+  document.getElementById('summary').textContent = prices.length
+    ? `${prices.length} prix · ${Math.ceil(prices.length/per)} étiquette(s)${per===2 && prices.length%2 ? ' · le dernier prix sera seul' : ''}`
+    : 'Aucun prix pour le moment.';
+  const fs = Math.max(12, Math.min(34, Number(document.getElementById('fontSize').value) || 22));
+  document.querySelectorAll('.price').forEach(el => el.style.fontSize = fs + 'pt');
+}
+
+function stopSpeech() {
+  pauseRequested = true;
+  if (recognition && dictationSession) {
+    try { recognition.stop(); } catch (e) {}
+  }
+  dictationSession = false;
+  micBtn.textContent = '🎙️ Dicter les prix';
+  micBtn.classList.remove('is-listening');
+  status.textContent = 'Pause : le texte reconnu est conservé. Vérifie-le, puis crée la liste ou reprends la dictée.';
+}
+
+function startSpeech() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    status.textContent = 'Dictée non prise en charge ici. Essaie dans Chrome sur HTTPS.';
+    return;
+  }
+  if (dictationSession) return;
+
+  pauseRequested = false;
+  sessionBaseText = input.value.trim();
+  finalResultsByIndex = new Map();
+
+  try {
+    recognition = new SR();
+    recognition.lang = 'fr-CA';
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    dictationSession = true;
+    micBtn.textContent = '🎙️ Micro actif';
+    micBtn.classList.add('is-listening');
+    status.textContent = 'Micro actif. Parle avec de petites pauses naturelles.';
+
+    recognition.onresult = event => {
+      // L’API expose toute la liste des résultats; resultIndex indique le
+      // premier index modifié. On remplace les résultats concernés par index
+      // plutôt que de concaténer aveuglément chaque événement.
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result && result.isFinal) {
+          const transcript = (result[0]?.transcript || '').trim();
+          if (transcript) finalResultsByIndex.set(i, transcript);
+          else finalResultsByIndex.delete(i);
+        } else {
+          finalResultsByIndex.delete(i);
+        }
+      }
+
+      const recognized = [...finalResultsByIndex.entries()]
+        .sort((a,b) => a[0] - b[0])
+        .map(entry => entry[1])
+        .filter(Boolean);
+
+      // La virgule marque une frontière entre résultats confirmés du moteur.
+      const recognizedText = recognized.join(', ');
+      input.value = [sessionBaseText, recognizedText].filter(Boolean).join(', ').trim();
+      const count = parsePrices(input.value).length;
+      status.textContent = `Micro actif · ${count} prix détecté(s). Vérifie la zone de texte avant de créer la liste.`;
+    };
+
+    recognition.onerror = event => {
+      dictationSession = false;
+      micBtn.textContent = '🎙️ Dicter les prix';
+      status.textContent = 'Erreur micro : ' + event.error + '. Le texte déjà reconnu reste visible.';
+    };
+
+    recognition.onend = () => {
+      dictationSession = false;
+      micBtn.textContent = '🎙️ Dicter les prix';
+      micBtn.classList.remove('is-listening');
+      sessionBaseText = input.value.trim();
+      if (!pauseRequested && status.textContent.startsWith('Micro actif')) {
+        status.textContent = 'Micro arrêté. Le texte est conservé; appuie sur Dicter les prix pour continuer.';
+      }
+    };
+
+    recognition.start();
+  } catch (e) {
+    dictationSession = false;
+    micBtn.textContent = '🎙️ Dicter les prix';
+    micBtn.classList.remove('is-listening');
+    status.textContent = 'Impossible de démarrer le micro. Essaie dans Chrome sur HTTPS.';
+  }
+}
+
+micBtn.addEventListener('click', startSpeech);
+document.getElementById('stopBtn').addEventListener('click', stopSpeech);
+document.getElementById('loadBtn').addEventListener('click', addFromInput);
+document.getElementById('addBtn').addEventListener('click', addFromInput);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  prices = [];
+  sessionBaseText = '';
+  finalResultsByIndex.clear();
+  input.value = '';
+  savePrices();
+  if (recognition) {
+    try { recognition.onend = null; recognition.stop(); } catch (e) {}
+  }
+  recognition = null;
+  dictationSession = false;
+  pauseRequested = true;
+  micBtn.textContent = '🎙️ Dicter les prix';
+  render();
+  status.textContent = 'Liste effacée.';
+});
+document.getElementById('fontSize').addEventListener('input', render);
+document.getElementById('perLabel').addEventListener('change', render);
+document.getElementById('printBtn').addEventListener('click', () => {
+  if (!prices.length) { status.textContent = 'Ajoute des prix avant d’imprimer.'; return; }
+  window.print();
+});
+
+render();
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
