@@ -121,7 +121,7 @@ try {
 function normalizeWords(text) {
   return text.toLowerCase()
     .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
-    .replace(/[‐‑‒–—-]/g, ' ')
+    .replace(/[‐-‒–—-]/g, ' ')
     .replace(/\\bet\\b/g, ' ')
     .replace(/\\s+/g, ' ')
     .trim();
@@ -169,8 +169,6 @@ function parsePrices(text) {
   const raw = text.trim();
   if (!raw) return [];
 
-  // D’abord, découper sur les séparateurs explicites. Chaque morceau est
-  // traité indépendamment pour prendre en charge chiffres et nombres en lettres.
   const chunks = raw
     .replace(/dollars?|piastres?/gi, ' ')
     .replace(/\\$/g, ' ')
@@ -187,8 +185,6 @@ function parsePrices(text) {
       continue;
     }
 
-    // Si le morceau contient plusieurs nombres écrits en chiffres séparés par
-    // des espaces, chacun devient un prix distinct (ex. "65 8 12").
     if (/^\\s*\\d+(?:\\s+\\d+)+\\s*$/.test(chunk)) {
       chunk.match(/\\d+/g).forEach(token => out.push(Number(token)));
       continue;
@@ -215,7 +211,6 @@ function parsePrices(text) {
       }
       if (found !== null) { out.push(found); i = end; }
       else {
-        // Permet les morceaux mixtes comme "65 huit 12".
         if (/^\\d+(?:[.,]\\d{1,2})?$/.test(words[i])) {
           const value = Number(words[i].replace(',', '.'));
           if (Number.isFinite(value)) out.push(value);
@@ -324,9 +319,6 @@ function startSpeech() {
     status.textContent = 'Micro actif. Parle avec de petites pauses naturelles.';
 
     recognition.onresult = event => {
-      // L’API expose toute la liste des résultats; resultIndex indique le
-      // premier index modifié. On remplace les résultats concernés par index
-      // plutôt que de concaténer aveuglément chaque événement.
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result && result.isFinal) {
@@ -343,7 +335,6 @@ function startSpeech() {
         .map(entry => entry[1])
         .filter(Boolean);
 
-      // La virgule marque une frontière entre résultats confirmés du moteur.
       const recognizedText = recognized.join(', ');
       input.value = [sessionBaseText, recognizedText].filter(Boolean).join(', ').trim();
       const count = parsePrices(input.value).length;
@@ -353,6 +344,7 @@ function startSpeech() {
     recognition.onerror = event => {
       dictationSession = false;
       micBtn.textContent = '🎙️ Dicter les prix';
+      micBtn.classList.remove('is-listening');
       status.textContent = 'Erreur micro : ' + event.error + '. Le texte déjà reconnu reste visible.';
     };
 
@@ -392,6 +384,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   dictationSession = false;
   pauseRequested = true;
   micBtn.textContent = '🎙️ Dicter les prix';
+  micBtn.classList.remove('is-listening');
   render();
   status.textContent = 'Liste effacée.';
 });
