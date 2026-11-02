@@ -1,0 +1,9 @@
+LAMB3RT TCG — Étiquettes (PWA en préparation)
+
+Fichiers :
+- index.html : application
+- manifest.webmanifest : nom, icône et paramètres d'installation
+- icon.svg : icône de l'application
+- sw.js : cache hors ligne de l'interface
+
+IMPORTANT : pour installer cette PWA et permettre la dictée directe, ces fichiers doivent être publiés sur un hébergement HTTPS. Ouvrir index.html directement depuis Téléchargements ne suffit pas et peut bloquer le microphone. L'impression Bluetooth directe vers la NIIMBOT D110 n'est pas encore implémentée; elle doit être testée et développée séparément après mise en ligne.
