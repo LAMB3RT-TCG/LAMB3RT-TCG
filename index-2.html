@@ -9,32 +9,37 @@
 <title>LAMB3RT TCG — Étiquettes rapides</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#f3f5f8;color:#172033;font-family:system-ui,Arial,sans-serif}
-header{background:#101827;color:#fff;padding:20px}
-header h1{margin:0 0 4px;font-size:23px}
-header p{margin:0;color:#c6d0e0}
+:root{color-scheme:dark;--gold:#d9b45b;--gold-light:#f3d98a;--black:#090a0c;--panel:#15171b;--line:#35302a;--muted:#b8b2a5}
+body{margin:0;background:var(--black);color:#f7f3e9;font-family:system-ui,Arial,sans-serif}
+header{background:linear-gradient(135deg,#090a0c,#211b10);color:#fff;padding:20px;border-bottom:1px solid #6e5729}
+header h1{margin:0 0 4px;font-size:23px;color:var(--gold-light);letter-spacing:.4px}
+header p{margin:0;color:#d0c8b7}
 main{max-width:760px;margin:auto;padding:14px}
-.card{background:#fff;border-radius:15px;padding:16px;margin-bottom:14px;box-shadow:0 3px 12px #13203a0b}
-h2{font-size:17px;margin:0 0 10px}
-.hint{font-size:13px;color:#657086;line-height:1.45}
-button{border:0;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:700;cursor:pointer}
-.primary{background:#1769ff;color:#fff}
-.secondary{background:#e9efff;color:#1749a8}
-.danger{background:#fff0f0;color:#a12222}
-.actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-textarea{width:100%;min-height:85px;border:1px solid #dce2eb;border-radius:10px;padding:12px;font:16px system-ui}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:16px;margin-bottom:14px;box-shadow:0 5px 18px #0007}
+h2{font-size:17px;margin:0 0 10px;color:var(--gold-light)}
+.hint{font-size:13px;color:var(--muted);line-height:1.45}
+button{border:1px solid transparent;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:700;cursor:pointer;transition:filter .15s,transform .15s}
+button:hover{filter:brightness(1.08)}button:active{transform:scale(.98)}
+.primary{background:linear-gradient(135deg,#f0d27e,#b68a32);color:#171108}
+.secondary{background:#29251d;border-color:#69552e;color:#f3d98a}
+.danger{background:#351c1c;border-color:#6b3030;color:#ffb9b9}
+.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
+#micBtn{width:58px;height:58px;padding:0;border-radius:50%;font-size:25px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 0 4px #d9b45b20,0 5px 18px #0008}
+#stopBtn{min-height:44px}
+textarea{width:100%;min-height:85px;border:1px solid #50452f;background:#0d0e10;color:#fff8e8;border-radius:10px;padding:12px;font:16px system-ui;outline:none}
+textarea:focus,input:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 2px #d9b45b22}
 .price-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
-.chip{display:flex;align-items:center;gap:8px;background:#f0f4fa;border:1px solid #dce2eb;padding:7px 9px;border-radius:9px;font-weight:700}
-.chip button{padding:0 5px;background:transparent;color:#a22}
+.chip{display:flex;align-items:center;gap:8px;background:#211f1a;border:1px solid #5a4828;padding:7px 9px;border-radius:9px;font-weight:700;color:#f5dfa0}
+.chip button{padding:0 5px;background:transparent;color:#ffb2a8}
 .label-grid{display:grid;gap:10px}
-.label{display:grid;grid-template-columns:1fr 1fr;border:1px dashed #8b95a7;background:#fff;width:100%;max-width:440px;min-height:88px;align-items:stretch}
-.half{display:flex;align-items:center;justify-content:center;position:relative;min-width:0;border-right:1px dashed #aeb6c4}
+.label{display:grid;grid-template-columns:1fr 1fr;border:1px dashed #9d854e;background:#fffaf0;color:#17130b;width:100%;max-width:440px;min-height:88px;align-items:stretch}
+.half{display:flex;align-items:center;justify-content:center;position:relative;min-width:0;border-right:1px dashed #b9a875}
 .half:last-child{border-right:0}
-.price{font-family:Arial,sans-serif;font-size:22pt;font-weight:800;white-space:nowrap;letter-spacing:-.7px}
-.currency{font-size:8pt;align-self:flex-end;margin:0 0 22px 3px}
-.notice{padding:10px 12px;background:#fff8e7;border:1px solid #f3dfaa;border-radius:10px;font-size:13px;line-height:1.45}
-input[type=number],select{padding:8px;border:1px solid #dce2eb;border-radius:8px;font:16px system-ui}
-footer{text-align:center;font-size:12px;color:#657086;padding:8px 12px 24px}
+.price{font-family:Arial,sans-serif;font-size:22pt;font-weight:800;white-space:nowrap;letter-spacing:-.7px;color:#111}
+.currency{font-size:8pt;align-self:flex-end;margin:0 0 22px 3px;color:#111}
+.notice{padding:10px 12px;background:#282216;border:1px solid #6e5729;border-radius:10px;font-size:13px;line-height:1.45;color:#f1dfb0}
+input[type=number],select{padding:8px;border:1px solid #50452f;background:#0d0e10;color:#fff8e8;border-radius:8px;font:16px system-ui}
+footer{text-align:center;font-size:12px;color:#a9a292;padding:8px 12px 24px}
 @media print{
  body{background:#fff}
  header,main>.card:not(.preview-card),.no-print,footer{display:none!important}
@@ -57,7 +62,7 @@ footer{text-align:center;font-size:12px;color:#657086;padding:8px 12px 24px}
 <h2>1. Dicter ou entrer les prix</h2>
 <p class="hint">Dicte les prix avec de petites pauses naturelles. Vérifie le texte reconnu avant de créer la liste. Les résultats vocaux confirmés sont ajoutés une seule fois.</p>
 <div class="actions no-print">
-<button class="primary" id="micBtn">🎙️ Dicter les prix</button>
+<button class="primary" id="micBtn" title="Dicter les prix" aria-label="Dicter les prix">🎙️</button>
 <button class="secondary" id="stopBtn">⏸️ Pause</button>
 </div>
 <textarea id="priceInput" placeholder="Ex. : 120, 78, 35, 50" aria-label="Prix dictés ou saisis"></textarea>
@@ -108,10 +113,10 @@ try {
 
 function normalizeWords(text) {
   return text.toLowerCase()
-    .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[‐‑‒–—-]/g, ' ')
-    .replace(/\\bet\\b/g, ' ')
-    .replace(/\\s+/g, ' ')
+    .replace(/\bet\b/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -161,14 +166,14 @@ function parsePrices(text) {
   // traité indépendamment pour prendre en charge chiffres et nombres en lettres.
   const chunks = raw
     .replace(/dollars?|piastres?/gi, ' ')
-    .replace(/\\$/g, ' ')
+    .replace(/\$/g, ' ')
     .split(/[;,\\n]+/)
     .map(s => s.trim())
     .filter(Boolean);
 
   const out = [];
   for (const chunk of chunks) {
-    const numeric = chunk.match(/^\\s*(\\d+(?:[.,]\\d{1,2})?)\\s*$/);
+    const numeric = chunk.match(/^\s*(\d+(?:[.,]\d{1,2})?)\s*$/);
     if (numeric) {
       const value = Number(numeric[1].replace(',', '.'));
       if (Number.isFinite(value) && value >= 0) out.push(value);
@@ -177,12 +182,12 @@ function parsePrices(text) {
 
     // Si le morceau contient plusieurs nombres écrits en chiffres séparés par
     // des espaces, chacun devient un prix distinct (ex. "65 8 12").
-    if (/^\\s*\\d+(?:\\s+\\d+)+\\s*$/.test(chunk)) {
-      chunk.match(/\\d+/g).forEach(token => out.push(Number(token)));
+    if (/^\s*\d+(?:\s+\d+)+\s*$/.test(chunk)) {
+      chunk.match(/\d+/g).forEach(token => out.push(Number(token)));
       continue;
     }
 
-    const numericTokens = chunk.match(/\\d+(?:[.,]\\d{1,2})?/g);
+    const numericTokens = chunk.match(/\d+(?:[.,]\d{1,2})?/g);
     if (numericTokens && !/[a-z]/i.test(chunk)) {
       numericTokens.forEach(token => {
         const value = Number(token.replace(',', '.'));
@@ -191,7 +196,7 @@ function parsePrices(text) {
       continue;
     }
 
-    const words = normalizeWords(chunk).split(/\\s+/).filter(Boolean);
+    const words = normalizeWords(chunk).split(/\s+/).filter(Boolean);
     let i = 0;
     while (i < words.length) {
       let found = null, end = i;
@@ -204,7 +209,7 @@ function parsePrices(text) {
       if (found !== null) { out.push(found); i = end; }
       else {
         // Permet les morceaux mixtes comme "65 huit 12".
-        if (/^\\d+(?:[.,]\\d{1,2})?$/.test(words[i])) {
+        if (/^\d+(?:[.,]\d{1,2})?$/.test(words[i])) {
           const value = Number(words[i].replace(',', '.'));
           if (Number.isFinite(value)) out.push(value);
         }
