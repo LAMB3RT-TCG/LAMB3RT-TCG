@@ -48,10 +48,10 @@ footer{text-align:center;font-size:12px;color:#a9a9a9;padding:8px 12px 24px}
 @media(max-width:420px){header{padding:18px 12px}main{padding:10px}.card{padding:14px}#micBtn{width:112px;height:112px;flex-basis:112px}}
 @media(prefers-reduced-motion:reduce){#micBtn.is-listening{animation:none}}
 @media print{
- body{background:#fff}
+ body{background:#fff;color:#111}
  header,main>.card:not(.preview-card),.no-print,footer{display:none!important}
  main{padding:0;max-width:none}
- .preview-card{box-shadow:none;padding:0;margin:0}
+ .preview-card{box-shadow:none;padding:0;margin:0;background:#fff;border:0}
  .label-grid{display:block}
  .label{width:40mm;height:12mm;min-height:12mm;max-width:none;border:0;border-radius:0;margin:0;break-inside:avoid;page-break-inside:avoid}
  .half{border-right:1px dashed #999}
@@ -121,7 +121,7 @@ try {
 function normalizeWords(text) {
   return text.toLowerCase()
     .normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
-    .replace(/[‐-‒–—-]/g, ' ')
+    .replace(/[‐‑‒–—-]/g, ' ')
     .replace(/\\bet\\b/g, ' ')
     .replace(/\\s+/g, ' ')
     .trim();
@@ -169,6 +169,8 @@ function parsePrices(text) {
   const raw = text.trim();
   if (!raw) return [];
 
+  // D’abord, découper sur les séparateurs explicites. Chaque morceau est
+  // traité indépendamment pour prendre en charge chiffres et nombres en lettres.
   const chunks = raw
     .replace(/dollars?|piastres?/gi, ' ')
     .replace(/\\$/g, ' ')
@@ -185,6 +187,8 @@ function parsePrices(text) {
       continue;
     }
 
+    // Si le morceau contient plusieurs nombres écrits en chiffres séparés par
+    // des espaces, chacun devient un prix distinct (ex. "65 8 12").
     if (/^\\s*\\d+(?:\\s+\\d+)+\\s*$/.test(chunk)) {
       chunk.match(/\\d+/g).forEach(token => out.push(Number(token)));
       continue;
@@ -211,6 +215,7 @@ function parsePrices(text) {
       }
       if (found !== null) { out.push(found); i = end; }
       else {
+        // Permet les morceaux mixtes comme "65 huit 12".
         if (/^\\d+(?:[.,]\\d{1,2})?$/.test(words[i])) {
           const value = Number(words[i].replace(',', '.'));
           if (Number.isFinite(value)) out.push(value);
@@ -319,6 +324,9 @@ function startSpeech() {
     status.textContent = 'Micro actif. Parle avec de petites pauses naturelles.';
 
     recognition.onresult = event => {
+      // L’API expose toute la liste des résultats; resultIndex indique le
+      // premier index modifié. On remplace les résultats concernés par index
+      // plutôt que de concaténer aveuglément chaque événement.
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result && result.isFinal) {
@@ -335,6 +343,7 @@ function startSpeech() {
         .map(entry => entry[1])
         .filter(Boolean);
 
+      // La virgule marque une frontière entre résultats confirmés du moteur.
       const recognizedText = recognized.join(', ');
       input.value = [sessionBaseText, recognizedText].filter(Boolean).join(', ').trim();
       const count = parsePrices(input.value).length;
