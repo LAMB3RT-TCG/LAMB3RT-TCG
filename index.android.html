@@ -348,46 +348,31 @@ function startSpeech() {
       recognition = current;
       current.lang = 'fr-CA';
       current.continuous = true;
-      // Même principe que la version PC : ne traiter que les résultats confirmés.
+      // Les résultats confirmés restent traités comme avant; les provisoires
+      // servent uniquement à l'affichage en direct.
       current.interimResults = true;
       current.maxAlternatives = 1;
 
       let sessionFinalText = '';
       current.onresult = event => {
-    const finalSegments = [];
-    const interimSegments = [];
-
-    for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (!result) continue;
-
-        const transcript = (result[0] && result[0].transcript || '').trim();
-        if (!transcript) continue;
-
-        if (result.isFinal) {
-            finalSegments.push(transcript);
-        } else {
-            interimSegments.push(transcript);
+        const finalSegments = [];
+        const interimSegments = [];
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (!result) continue;
+          const transcript = (result[0] && result[0].transcript || '').trim();
+          if (!transcript) continue;
+          if (result.isFinal) finalSegments.push(transcript);
+          else interimSegments.push(transcript);
         }
-    }
-
-    // On conserve uniquement les résultats confirmés.
-    sessionFinalText = finalSegments.join(', ');
-
-    // Les résultats provisoires sont affichés, mais pas enregistrés définitivement.
-    const liveText = interimSegments.join(', ');
-
-    input.value = [
-        sessionBaseText,
-        sessionFinalText,
-        liveText
-    ].filter(Boolean).join(', ').trim();
-
-    const count = parsePrices(
-        [sessionBaseText, sessionFinalText].filter(Boolean).join(', ')
-    ).length;
-
-    status.textContent = `Micro actif · ${count} prix confirmé(s).`;
+        // On reconstruit les résultats confirmés comme dans la version stable,
+        // sans ajouter plusieurs fois les mêmes segments.
+        sessionFinalText = finalSegments.join(', ');
+        const confirmedText = [sessionBaseText, sessionFinalText].filter(Boolean).join(', ').trim();
+        const interimText = interimSegments.join(' ');
+        input.value = [confirmedText, interimText].filter(Boolean).join(', ').trim();
+        const count = parsePrices(confirmedText).length;
+        status.textContent = `Micro actif · ${count} prix confirmé(s)${interimText ? ' · reconnaissance en cours…' : ''}.`;
       };
 
       current.onerror = event => {
