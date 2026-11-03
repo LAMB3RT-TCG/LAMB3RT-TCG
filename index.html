@@ -7,6 +7,20 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <title>LAMB3RT TCG — Étiquettes rapides</title>
+<script>
+// Redirection automatique : les téléphones Android utilisent la version dédiée.
+(function () {
+  const isAndroidPhone = /Android/i.test(navigator.userAgent) && /Mobile/i.test(navigator.userAgent);
+  const isAndroidPage = /(?:^|\/)index_android\.html$/i.test(location.pathname);
+  if (isAndroidPhone && !isAndroidPage) {
+    const target = new URL('./index_android.html', location.href);
+    target.search = location.search;
+    target.hash = location.hash;
+    location.replace(target.href);
+  }
+})();
+</script>
+
 <style>
 *{box-sizing:border-box}
 :root{color-scheme:dark;--gold:#d9b45b;--gold-light:#f3d98a;--black:#090a0c;--panel:#15171b;--line:#35302a;--muted:#b8b2a5}
