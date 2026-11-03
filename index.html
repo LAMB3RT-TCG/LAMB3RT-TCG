@@ -103,8 +103,6 @@ let recognition = null;
 let dictationSession = false;
 let pauseRequested = false;
 let sessionBaseText = '';
-// Les résultats sont conservés par index pour éviter de les ajouter deux fois.
-let finalResultsByIndex = new Map();
 
 const input = document.getElementById('priceInput');
 const status = document.getElementById('status');
@@ -259,7 +257,6 @@ function addFromInput() {
   savePrices();
   input.value = '';
   sessionBaseText = '';
-  finalResultsByIndex.clear();
   render();
   status.textContent = `${parsed.length} prix ajoutés; ${prices.length} au total.`;
 }
@@ -327,7 +324,6 @@ function startSpeech() {
 
   pauseRequested = false;
   sessionBaseText = input.value.trim();
-  finalResultsByIndex = new Map();
 
   try {
     recognition = new SR();
@@ -340,22 +336,22 @@ function startSpeech() {
     document.getElementById('micCaption').textContent = 'Micro actif'; status.textContent = 'Micro actif. Dicte tes prix naturellement : ils apparaîtront au fur et à mesure. Vérifie le texte avant de créer la liste.';
 
     recognition.onresult = event => {
-      // Les résultats provisoires Android peuvent être réécrits. On conserve
-      // les segments définitifs par index et on affiche les provisoires à part.
-      const interim = [];
+      // Reconstruire le résultat depuis la liste courante fournie par le navigateur.
+      // Ne jamais concaténer les événements : Android peut réécrire les provisoires.
+      const finalSegments = [];
+      const interimSegments = [];
+
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         const transcript = (result && result[0] && result[0].transcript || '').trim();
         if (!transcript) continue;
-        if (result.isFinal) finalResultsByIndex.set(i, transcript);
-        else interim.push(transcript);
+
+        if (result.isFinal) finalSegments.push(transcript);
+        else interimSegments.push(transcript);
       }
 
-      const finalText = Array.from(finalResultsByIndex.entries())
-        .sort((a, b) => a[0] - b[0])
-        .map(entry => entry[1])
-        .join(', ');
-      const interimText = interim.join(' ');
+      const finalText = finalSegments.join(', ');
+      const interimText = interimSegments.join(' ');
       const recognizedText = [finalText, interimText].filter(Boolean).join(' ').trim();
 
       input.value = [sessionBaseText, recognizedText].filter(Boolean).join(', ').trim();
@@ -393,7 +389,6 @@ document.getElementById('addBtn').addEventListener('click', addFromInput);
 document.getElementById('clearBtn').addEventListener('click', () => {
   prices = [];
   sessionBaseText = '';
-  finalResultsByIndex.clear();
   input.value = '';
   savePrices();
   if (recognition) {
