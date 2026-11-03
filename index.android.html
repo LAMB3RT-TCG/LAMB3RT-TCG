@@ -349,22 +349,28 @@ function startSpeech() {
       current.lang = 'fr-CA';
       current.continuous = true;
       // Même principe que la version PC : ne traiter que les résultats confirmés.
+      // Android : attendre les résultats confirmés plutôt que d'afficher les
+      // hypothèses provisoires, qui peuvent se répéter ou fusionner les chiffres.
       current.interimResults = false;
       current.maxAlternatives = 1;
 
       let sessionFinalText = '';
       current.onresult = event => {
         const finalSegments = [];
+
         for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
           if (!result || !result.isFinal) continue;
+
           const transcript = (result[0] && result[0].transcript || '').trim();
           if (transcript) finalSegments.push(transcript);
         }
-        // event.results représente l'ensemble des résultats de la session courante :
-        // on reconstruit au lieu d'ajouter chaque événement, pour éviter les doublons.
+
+        // N'afficher que les mots/prix confirmés par la reconnaissance vocale.
         sessionFinalText = finalSegments.join(', ');
-        input.value = [sessionBaseText, sessionFinalText].filter(Boolean).join(', ').trim();
+        input.value = [sessionBaseText, sessionFinalText]
+          .filter(Boolean).join(', ').trim();
+
         const count = parsePrices(input.value).length;
         status.textContent = `Micro actif · ${count} prix confirmé(s).`;
       };
