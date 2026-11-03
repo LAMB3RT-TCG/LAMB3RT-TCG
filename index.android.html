@@ -353,42 +353,40 @@ function startSpeech() {
       current.maxAlternatives = 1;
 
       let sessionFinalText = '';
-      current.onresult = event => {
-    const finalSegments = [];
-    const interimSegments = [];
+            current.onresult = event => {
+        const finalSegments = [];
+        const interimSegments = [];
 
-    for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (!result) continue;
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (!result) continue;
 
-        const transcript = (result[0] && result[0].transcript || '').trim();
-        if (!transcript) continue;
+          const transcript = (result[0] && result[0].transcript || '').trim();
+          if (!transcript) continue;
 
-        if (result.isFinal) {
+          if (result.isFinal) {
             finalSegments.push(transcript);
-        } else {
+          } else {
             interimSegments.push(transcript);
+          }
         }
-    }
 
-    // On conserve uniquement les résultats confirmés.
-    sessionFinalText = finalSegments.join(', ');
+        // On conserve uniquement les résultats confirmés.
+        sessionFinalText = finalSegments.join(', ');
 
-    // Les résultats provisoires sont affichés, mais pas enregistrés définitivement.
-    const liveText = interimSegments.join(', ');
+        // Les résultats provisoires sont affichés en direct.
+        const liveText = interimSegments.join(', ');
 
-    input.value = [
-        sessionBaseText,
-        sessionFinalText,
-        liveText
-    ].filter(Boolean).join(', ').trim();
+        input.value = [
+          sessionBaseText,
+          sessionFinalText,
+          liveText
+        ].filter(Boolean).join(', ').trim();
 
-    const count = parsePrices(
-        [sessionBaseText, sessionFinalText].filter(Boolean).join(', ')
-    ).length;
+        const count = parsePrices(
+          [sessionBaseText, sessionFinalText].filter(Boolean).join(', ')
+        ).length;
 
-    status.textContent = `Micro actif · ${count} prix confirmé(s).`;
-};
         status.textContent = `Micro actif · ${count} prix confirmé(s).`;
       };
 
