@@ -349,7 +349,7 @@ function startSpeech() {
       recognition = current;
       current.lang = 'fr-CA';
       current.continuous = true;
-      current.interimResults = true;
+      current.interimResults = false;
       current.maxAlternatives = 1;
 
       current.onresult = event => {
@@ -366,21 +366,12 @@ function startSpeech() {
 
         const finals = [...finalResultsByIndex.entries()]
           .sort((a, b) => a[0] - b[0]).map(entry => entry[1]).filter(Boolean);
-        const interims = [];
-        for (let i = 0; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result && !result.isFinal) {
-            const transcript = (result[0] && result[0].transcript || '').trim();
-            if (transcript) interims.push(transcript);
-          }
-        }
         const finalText = finals.join(', ');
-        const interimText = interims.join(' ');
-        const visibleText = [sessionBaseText, finalText, interimText]
-          .filter(Boolean).join(', ').trim();
-        input.value = visibleText;
-        const confirmedCount = parsePrices([sessionBaseText, finalText].filter(Boolean).join(', ')).length;
-        status.textContent = `Micro actif · ${confirmedCount} prix confirmé(s)${interimText ? ' · reconnaissance en cours…' : ''}.`;
+        // Afficher uniquement les segments confirmés : aucun résultat provisoire
+        // n'est concaténé, ce qui évite les répétitions visibles sur Android.
+        input.value = [sessionBaseText, finalText].filter(Boolean).join(', ').trim();
+        const confirmedCount = parsePrices(input.value).length;
+        status.textContent = `Micro actif · ${confirmedCount} prix confirmé(s).`;
       };
 
       current.onerror = event => {
