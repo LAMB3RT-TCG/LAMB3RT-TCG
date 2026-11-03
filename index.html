@@ -112,7 +112,7 @@ const micBtn = document.getElementById('micBtn');
 
 try {
   const saved = JSON.parse(localStorage.getItem('lamb3rt_prices_v1') || '[]');
-  if (Array.isArray(saved)) prices = saved.filter(n => typeof n === 'number' && Number.isFinite(n) && n >= MIN_PRICE && n <= MAX_PRICE);
+  if (Array.isArray(saved)) prices = saved.filter(n => typeof n === 'number' && Number.isFinite(n));
 } catch (e) {}
 
 function normalizeWords(text) {
@@ -162,36 +162,20 @@ function frenchNumberWordsToNumber(phrase) {
   return i === w.length ? n : null;
 }
 
-const MIN_PRICE = 10;
-const MAX_PRICE = 999;
-
 function splitFusedPrice(value) {
   const digits = String(value);
-  if (!/^\d{4,9}$/.test(digits) || Number(digits) <= MAX_PRICE) return null;
-  const solutions = [];
-  function walk(pos, parts) {
-    if (solutions.length > 1) return;
-    if (pos === digits.length) { if (parts.length >= 2) solutions.push(parts); return; }
-    for (const width of [2, 3]) {
-      const piece = digits.slice(pos, pos + width);
-      if (piece.length !== width) continue;
-      const n = Number(piece);
-      if (n >= MIN_PRICE && n <= MAX_PRICE) walk(pos + width, [...parts, n]);
+  // Détecte uniquement les grands nombres continus qui pourraient être deux prix fusionnés.
+  if (!/^\d{4,6}$/.test(digits) || Number(digits) <= 200) return null;
+  const candidates = [];
+  for (let cut = 2; cut < digits.length; cut++) {
+    const left = Number(digits.slice(0, cut));
+    const right = Number(digits.slice(cut));
+    if (left >= 15 && left <= 200 && right >= 15 && right <= 200) {
+      candidates.push([left, right]);
     }
   }
-  walk(0, []);
-  return solutions.length === 1 ? solutions[0] : null;
-}
-
-function parseNumericToken(token) {
-  const normalized = String(token).replace(',', '.');
-  const value = Number(normalized);
-  if (!Number.isFinite(value)) return [];
-  if (!normalized.includes('.') && value > MAX_PRICE) {
-    const split = splitFusedPrice(normalized);
-    if (split) return split;
-  }
-  return value >= MIN_PRICE && value <= MAX_PRICE ? [value] : [];
+  // Si plusieurs découpages sont possibles, ne devine pas : laisse le texte vérifiable.
+  return candidates.length === 1 ? candidates[0] : null;
 }
 
 function parsePrices(text) {
@@ -203,7 +187,7 @@ function parsePrices(text) {
   const chunks = raw
     .replace(/dollars?|piastres?/gi, ' ')
     .replace(/\$/g, ' ')
-    .split(/[;,\\n]+/)
+    .split(/[;,\n]+/)
     .map(s => s.trim())
     .filter(Boolean);
 
@@ -211,21 +195,28 @@ function parsePrices(text) {
   for (const chunk of chunks) {
     const numeric = chunk.match(/^\s*(\d+(?:[.,]\d{1,2})?)\s*$/);
     if (numeric) {
-      out.push(...parseNumericToken(numeric[1]));
+      const token = numeric[1].replace(',', '.');
+      const value = Number(token);
+      if (Number.isFinite(value) && value >= 0) {
+        const split = !token.includes('.') ? splitFusedPrice(token) : null;
+        if (split) out.push(...split);
+        else out.push(value);
+      }
       continue;
     }
 
     // Si le morceau contient plusieurs nombres écrits en chiffres séparés par
     // des espaces, chacun devient un prix distinct (ex. "65 8 12").
     if (/^\s*\d+(?:\s+\d+)+\s*$/.test(chunk)) {
-      chunk.match(/\d+/g).forEach(token => out.push(...parseNumericToken(token)));
+      chunk.match(/\d+/g).forEach(token => out.push(Number(token)));
       continue;
     }
 
     const numericTokens = chunk.match(/\d+(?:[.,]\d{1,2})?/g);
     if (numericTokens && !/[a-z]/i.test(chunk)) {
       numericTokens.forEach(token => {
-        out.push(...parseNumericToken(token));
+        const value = Number(token.replace(',', '.'));
+        if (Number.isFinite(value) && value >= 0) out.push(value);
       });
       continue;
     }
@@ -236,7 +227,7 @@ function parsePrices(text) {
       let found = null, end = i;
       for (let j = Math.min(words.length, i + 5); j > i; j--) {
         const value = frenchNumberWordsToNumber(words.slice(i, j).join(' '));
-        if (value !== null && value >= MIN_PRICE && value <= MAX_PRICE) {
+        if (value !== null && value >= 0 && value <= 999999) {
           found = value; end = j; break;
         }
       }
@@ -245,7 +236,7 @@ function parsePrices(text) {
         // Permet les morceaux mixtes comme "65 huit 12".
         if (/^\d+(?:[.,]\d{1,2})?$/.test(words[i])) {
           const value = Number(words[i].replace(',', '.'));
-          if (Number.isFinite(value) && value >= MIN_PRICE && value <= MAX_PRICE) out.push(value);
+          if (Number.isFinite(value)) out.push(value);
         }
         i++;
       }
@@ -349,19 +340,27 @@ function startSpeech() {
     document.getElementById('micCaption').textContent = 'Micro actif'; status.textContent = 'Micro actif. Dicte tes prix naturellement : ils apparaîtront au fur et à mesure. Vérifie le texte avant de créer la liste.';
 
     recognition.onresult = event => {
-      // Recompose la transcription complète à chaque événement, y compris les
-      // résultats provisoires, pour afficher la reconnaissance pendant la dictée.
-      const recognized = [];
+      // Les résultats provisoires Android peuvent être réécrits. On conserve
+      // les segments définitifs par index et on affiche les provisoires à part.
+      const interim = [];
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         const transcript = (result && result[0] && result[0].transcript || '').trim();
-        if (transcript) recognized.push(transcript);
+        if (!transcript) continue;
+        if (result.isFinal) finalResultsByIndex.set(i, transcript);
+        else interim.push(transcript);
       }
 
-      const recognizedText = recognized.join(', ');
+      const finalText = Array.from(finalResultsByIndex.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(entry => entry[1])
+        .join(', ');
+      const interimText = interim.join(' ');
+      const recognizedText = [finalText, interimText].filter(Boolean).join(' ').trim();
+
       input.value = [sessionBaseText, recognizedText].filter(Boolean).join(', ').trim();
-      const count = parsePrices(input.value).length;
-      status.textContent = `Micro actif · ${count} prix détecté(s), provisoires inclus. Vérifie le texte avant de créer la liste.`;
+      const count = parsePrices([sessionBaseText, finalText].filter(Boolean).join(', ')).length;
+      status.textContent = `Micro actif · ${count} prix confirmé(s)${interimText ? ' · reconnaissance en cours…' : ''}. Vérifie le texte avant de créer la liste.`;
     };
 
     recognition.onerror = event => {
