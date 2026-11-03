@@ -1,100 +1,3 @@
-<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101827">
-<link rel="manifest" href="./manifest.webmanifest">
-<link rel="icon" href="./icon.svg" type="image/svg+xml">
-<title>LAMB3RT TCG — Étiquettes rapides</title>
-<style>
-*{box-sizing:border-box}
-:root{color-scheme:dark;--gold:#d9b45b;--gold-light:#f3d98a;--black:#090a0c;--panel:#15171b;--line:#35302a;--muted:#b8b2a5}
-body{margin:0;background:var(--black);color:#f7f3e9;font-family:system-ui,Arial,sans-serif}
-header{background:linear-gradient(135deg,#090a0c,#211b10);color:#fff;padding:20px;border-bottom:1px solid #6e5729}
-header h1{margin:0 0 4px;font-size:23px;color:var(--gold-light);letter-spacing:.4px}
-header p{margin:0;color:#d0c8b7}
-main{max-width:760px;margin:auto;padding:14px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:16px;margin-bottom:14px;box-shadow:0 5px 18px #0007}
-h2{font-size:17px;margin:0 0 10px;color:var(--gold-light)}
-.hint{font-size:13px;color:var(--muted);line-height:1.45}
-button{border:1px solid transparent;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:700;cursor:pointer;transition:filter .15s,transform .15s}
-button:hover{filter:brightness(1.08)}button:active{transform:scale(.98)}
-.primary{background:linear-gradient(135deg,#f0d27e,#b68a32);color:#171108}
-.secondary{background:#29251d;border-color:#69552e;color:#f3d98a}
-.danger{background:#351c1c;border-color:#6b3030;color:#ffb9b9}
-.actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
-#micBtn{width:64px;height:64px;min-width:64px;padding:0;border-radius:50%;font-size:27px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 64px;box-shadow:0 0 0 4px #d9b45b20,0 5px 18px #0008}
-#micBtn .mic-icon{display:block;line-height:1}
-#micBtn.is-active{background:linear-gradient(135deg,#ffe68b,#d9b45b);box-shadow:0 0 0 5px #d9b45b40,0 0 18px #d9b45b55}
-.mic-caption{font-size:13px;color:var(--muted);align-self:center}
-#stopBtn{min-height:44px}
-textarea{width:100%;min-height:85px;border:1px solid #50452f;background:#0d0e10;color:#fff8e8;border-radius:10px;padding:12px;font:16px system-ui;outline:none}
-textarea:focus,input:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 2px #d9b45b22}
-.price-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
-.chip{display:flex;align-items:center;gap:8px;background:#211f1a;border:1px solid #5a4828;padding:7px 9px;border-radius:9px;font-weight:700;color:#f5dfa0}
-.chip button{padding:0 5px;background:transparent;color:#ffb2a8}
-.label-grid{display:grid;gap:10px}
-.label{display:grid;grid-template-columns:1fr 1fr;border:1px dashed #9d854e;background:#fffaf0;color:#17130b;width:100%;max-width:440px;min-height:88px;align-items:stretch}
-.half{display:flex;align-items:center;justify-content:center;position:relative;min-width:0;border-right:1px dashed #b9a875}
-.half:last-child{border-right:0}
-.price{font-family:Arial,sans-serif;font-size:22pt;font-weight:800;white-space:nowrap;letter-spacing:-.7px;color:#111}
-.currency{font-size:8pt;align-self:flex-end;margin:0 0 22px 3px;color:#111}
-.notice{padding:10px 12px;background:#282216;border:1px solid #6e5729;border-radius:10px;font-size:13px;line-height:1.45;color:#f1dfb0}
-input[type=number],select{padding:8px;border:1px solid #50452f;background:#0d0e10;color:#fff8e8;border-radius:8px;font:16px system-ui}
-footer{text-align:center;font-size:12px;color:#a9a292;padding:8px 12px 24px}
-@media print{
- body{background:#fff}
- header,main>.card:not(.preview-card),.no-print,footer{display:none!important}
- main{padding:0;max-width:none}
- .preview-card{box-shadow:none;padding:0;margin:0}
- .label-grid{display:block}
- .label{width:40mm;height:12mm;min-height:12mm;max-width:none;border:0;border-radius:0;margin:0;break-inside:avoid;page-break-inside:avoid}
- .half{border-right:1px dashed #999}
- .price{font-size:22pt}
- .currency{font-size:8pt;margin-bottom:3mm}
- .half small{display:none}
- @page{size:auto;margin:0}
-}
-</style>
-</head>
-<body>
-<header><h1>LAMB3RT TCG</h1><p>Étiquettes rapides · dictée et préparation d’impression</p></header>
-<main>
-<section class="card">
-<h2>1. Dicter ou entrer les prix</h2>
-<p class="hint">Dicte les prix naturellement. Le texte reconnu apparaît pendant la dictée; vérifie-le avant de créer la liste.</p>
-<div class="actions no-print">
-<button class="primary" id="micBtn" title="Dicter les prix" aria-label="Dicter les prix"><span class="mic-icon" aria-hidden="true">🎙️</span></button>
-<span id="micCaption" class="mic-caption">Appuie pour dicter</span>
-<button class="secondary" id="stopBtn">⏸️ Pause</button>
-</div>
-<textarea id="priceInput" placeholder="Ex. : 120, 78, 35, 50" aria-label="Prix dictés ou saisis"></textarea>
-<div class="actions no-print">
-<button class="primary" id="loadBtn">Créer la liste</button>
-<button class="secondary" id="addBtn">Ajouter à la liste</button>
-<button class="danger" id="clearBtn">Tout effacer</button>
-</div>
-<div id="status" class="hint" aria-live="polite">Prêt. La dictée nécessite un navigateur compatible et l’autorisation du microphone.</div>
-<div id="priceList" class="price-list"></div>
-</section>
-<section class="card">
-<h2>2. Format d’étiquette</h2>
-<p class="hint">Aperçu de deux prix par étiquette de 40 × 12 mm, à couper au milieu. Le format réel devra être validé avec la NIIMBOT D110.</p>
-<div class="actions no-print">
-<label>Police (aperçu) <input id="fontSize" type="number" min="12" max="34" value="22"></label>
-<label>Prix par étiquette <select id="perLabel"><option value="2" selected>2</option><option value="1">1</option></select></label>
-</div>
-</section>
-<section class="card preview-card">
-<h2 class="no-print">3. Aperçu des étiquettes</h2>
-<div id="summary" class="hint no-print">Aucun prix pour le moment.</div>
-<div id="labels" class="label-grid"></div>
-<div class="actions no-print"><button class="primary" id="printBtn">🖨️ Imprimer / aperçu système</button></div>
-<div class="notice no-print" style="margin-top:12px">Important : ce prototype ouvre l’impression du navigateur; il n’envoie pas encore les commandes Bluetooth directement à la D110.</div>
-</section>
-</main>
-<footer>Les prix sont sauvegardés sur cet appareil. La dictée directe nécessite un navigateur compatible et une origine sécurisée HTTPS.</footer>
 <script>
 'use strict';
 
@@ -118,7 +21,7 @@ try {
 function normalizeWords(text) {
   return text.toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[‐‑‒–—-]/g, ' ')
+    .replace(/[‐-‒–—-]/g, ' ')
     .replace(/\bet\b/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -136,27 +39,52 @@ function frenchNumberWordsToNumber(phrase) {
   const tens = {vingt:20, trente:30, quarante:40, cinquante:50};
   let i = 0, n = 0;
 
-  if (w[i] === 'cent' || w[i] === 'cents') { n = 100; i++; }
-  else if (units[w[i]] !== undefined && w[i+1] === 'cent') { n = units[w[i]] * 100; i += 2; }
+  if (w[i] === 'cent' || w[i] === 'cents') {
+    n = 100;
+    i++;
+  } else if (units[w[i]] !== undefined && w[i+1] === 'cent') {
+    n = units[w[i]] * 100;
+    i += 2;
+  }
 
   if (w[i] === 'mille') {
-    n = (n || 1) * 1000; i++;
+    n = (n || 1) * 1000;
+    i++;
   }
 
   if (w[i] === 'quatre' && (w[i+1] === 'vingt' || w[i+1] === 'vingts')) {
-    n += 80; i += 2;
-    if (units[w[i]] !== undefined && units[w[i]] < 10) { n += units[w[i]]; i++; }
-    else if (units[w[i]] !== undefined && units[w[i]] >= 10 && units[w[i]] <= 16) { n += units[w[i]]; i++; }
+    n += 80;
+    i += 2;
+    if (units[w[i]] !== undefined && units[w[i]] < 10) {
+      n += units[w[i]];
+      i++;
+    } else if (units[w[i]] !== undefined && units[w[i]] >= 10 && units[w[i]] <= 16) {
+      n += units[w[i]];
+      i++;
+    }
   } else if (w[i] === 'soixante') {
-    n += 60; i++;
-    if (w[i] === 'dix') { n += 10; i++; }
-    else if (units[w[i]] !== undefined && units[w[i]] >= 10 && units[w[i]] <= 16) { n += units[w[i]]; i++; }
-    else if (units[w[i]] !== undefined && units[w[i]] < 10) { n += units[w[i]]; i++; }
+    n += 60;
+    i++;
+    if (w[i] === 'dix') {
+      n += 10;
+      i++;
+    } else if (units[w[i]] !== undefined && units[w[i]] >= 10 && units[w[i]] <= 16) {
+      n += units[w[i]];
+      i++;
+    } else if (units[w[i]] !== undefined && units[w[i]] < 10) {
+      n += units[w[i]];
+      i++;
+    }
   } else if (tens[w[i]] !== undefined) {
-    n += tens[w[i]]; i++;
-    if (units[w[i]] !== undefined && units[w[i]] < 10) { n += units[w[i]]; i++; }
+    n += tens[w[i]];
+    i++;
+    if (units[w[i]] !== undefined && units[w[i]] < 10) {
+      n += units[w[i]];
+      i++;
+    }
   } else if (units[w[i]] !== undefined) {
-    n += units[w[i]]; i++;
+    n += units[w[i]];
+    i++;
   }
 
   return i === w.length ? n : null;
@@ -164,17 +92,18 @@ function frenchNumberWordsToNumber(phrase) {
 
 function splitFusedPrice(value) {
   const digits = String(value);
-  // Détecte uniquement les grands nombres continus qui pourraient être deux prix fusionnés.
   if (!/^\d{4,6}$/.test(digits) || Number(digits) <= 200) return null;
+
   const candidates = [];
   for (let cut = 2; cut < digits.length; cut++) {
     const left = Number(digits.slice(0, cut));
     const right = Number(digits.slice(cut));
+
     if (left >= 15 && left <= 200 && right >= 15 && right <= 200) {
       candidates.push([left, right]);
     }
   }
-  // Si plusieurs découpages sont possibles, ne devine pas : laisse le texte vérifiable.
+
   return candidates.length === 1 ? candidates[0] : null;
 }
 
@@ -182,8 +111,6 @@ function parsePrices(text) {
   const raw = text.trim();
   if (!raw) return [];
 
-  // D’abord, découper sur les séparateurs explicites. Chaque morceau est
-  // traité indépendamment pour prendre en charge chiffres et nombres en lettres.
   const chunks = raw
     .replace(/dollars?|piastres?/gi, ' ')
     .replace(/\$/g, ' ')
@@ -192,11 +119,14 @@ function parsePrices(text) {
     .filter(Boolean);
 
   const out = [];
+
   for (const chunk of chunks) {
     const numeric = chunk.match(/^\s*(\d+(?:[.,]\d{1,2})?)\s*$/);
+
     if (numeric) {
       const token = numeric[1].replace(',', '.');
       const value = Number(token);
+
       if (Number.isFinite(value) && value >= 0) {
         const split = !token.includes('.') ? splitFusedPrice(token) : null;
         if (split) out.push(...split);
@@ -205,14 +135,13 @@ function parsePrices(text) {
       continue;
     }
 
-    // Si le morceau contient plusieurs nombres écrits en chiffres séparés par
-    // des espaces, chacun devient un prix distinct (ex. "65 8 12").
     if (/^\s*\d+(?:\s+\d+)+\s*$/.test(chunk)) {
       chunk.match(/\d+/g).forEach(token => out.push(Number(token)));
       continue;
     }
 
     const numericTokens = chunk.match(/\d+(?:[.,]\d{1,2})?/g);
+
     if (numericTokens && !/[a-z]/i.test(chunk)) {
       numericTokens.forEach(token => {
         const value = Number(token.replace(',', '.'));
@@ -223,17 +152,25 @@ function parsePrices(text) {
 
     const words = normalizeWords(chunk).split(/\s+/).filter(Boolean);
     let i = 0;
+
     while (i < words.length) {
-      let found = null, end = i;
+      let found = null;
+      let end = i;
+
       for (let j = Math.min(words.length, i + 5); j > i; j--) {
         const value = frenchNumberWordsToNumber(words.slice(i, j).join(' '));
+
         if (value !== null && value >= 0 && value <= 999999) {
-          found = value; end = j; break;
+          found = value;
+          end = j;
+          break;
         }
       }
-      if (found !== null) { out.push(found); i = end; }
-      else {
-        // Permet les morceaux mixtes comme "65 huit 12".
+
+      if (found !== null) {
+        out.push(found);
+        i = end;
+      } else {
         if (/^\d+(?:[.,]\d{1,2})?$/.test(words[i])) {
           const value = Number(words[i].replace(',', '.'));
           if (Number.isFinite(value)) out.push(value);
@@ -242,39 +179,65 @@ function parsePrices(text) {
       }
     }
   }
+
   return out;
 }
 
 function money(n) {
-  return Number.isInteger(n) ? String(n) : n.toLocaleString('fr-CA', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return Number.isInteger(n)
+    ? String(n)
+    : n.toLocaleString('fr-CA', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
 }
+
 function savePrices() {
-  try { localStorage.setItem('lamb3rt_prices_v1', JSON.stringify(prices)); } catch (e) {}
+  try {
+    localStorage.setItem('lamb3rt_prices_v1', JSON.stringify(prices));
+  } catch (e) {}
 }
 
 function addFromInput() {
   const parsed = parsePrices(input.value);
-  if (!parsed.length) { status.textContent = 'Aucun prix détecté. Vérifie le texte.'; return; }
+
+  if (!parsed.length) {
+    status.textContent = 'Aucun prix détecté. Vérifie le texte.';
+    return;
+  }
+
   prices = prices.concat(parsed);
   savePrices();
   input.value = '';
   sessionBaseText = '';
   render();
+
   status.textContent = `${parsed.length} prix ajoutés; ${prices.length} au total.`;
 }
 
 function render() {
   const list = document.getElementById('priceList');
   list.innerHTML = '';
+
   prices.forEach((price, index) => {
     const chip = document.createElement('div');
     chip.className = 'chip';
+
     const span = document.createElement('span');
     span.textContent = money(price) + ' $';
+
     const remove = document.createElement('button');
-    remove.type = 'button'; remove.title = 'Supprimer'; remove.textContent = '×';
+    remove.type = 'button';
+    remove.title = 'Supprimer';
+    remove.textContent = '×';
     remove.setAttribute('aria-label', 'Supprimer ' + money(price) + ' dollars');
-    remove.addEventListener('click', () => { prices.splice(index, 1); savePrices(); render(); });
+
+    remove.addEventListener('click', () => {
+      prices.splice(index, 1);
+      savePrices();
+      render();
+    });
+
     chip.append(span, remove);
     list.appendChild(chip);
   });
@@ -282,19 +245,30 @@ function render() {
   const per = Number(document.getElementById('perLabel').value);
   const labels = document.getElementById('labels');
   labels.innerHTML = '';
+
   for (let i = 0; i < prices.length; i += per) {
     const label = document.createElement('div');
     label.className = 'label';
+
     for (let j = 0; j < per; j++) {
       const half = document.createElement('div');
       half.className = 'half';
+
       if (prices[i+j] !== undefined) {
-        const p = document.createElement('span'); p.className = 'price'; p.textContent = money(prices[i+j]);
-        const c = document.createElement('span'); c.className = 'currency'; c.textContent = '$';
+        const p = document.createElement('span');
+        p.className = 'price';
+        p.textContent = money(prices[i+j]);
+
+        const c = document.createElement('span');
+        c.className = 'currency';
+        c.textContent = '$';
+
         half.append(p, c);
       }
+
       label.appendChild(half);
     }
+
     if (per === 1) label.style.gridTemplateColumns = '1fr';
     labels.appendChild(label);
   }
@@ -302,132 +276,184 @@ function render() {
   document.getElementById('summary').textContent = prices.length
     ? `${prices.length} prix · ${Math.ceil(prices.length/per)} étiquette(s)${per===2 && prices.length%2 ? ' · le dernier prix sera seul' : ''}`
     : 'Aucun prix pour le moment.';
+
   const fs = Math.max(12, Math.min(34, Number(document.getElementById('fontSize').value) || 22));
-  document.querySelectorAll('.price').forEach(el => el.style.fontSize = fs + 'pt');
+
+  document.querySelectorAll('.price').forEach(el => {
+    el.style.fontSize = fs + 'pt';
+  });
 }
+
+/* ===========================
+   DICTÉE ANDROID
+   =========================== */
 
 function stopSpeech() {
   pauseRequested = true;
   dictationSession = false;
-  if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
-  if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
-  finalResultsByIndex.clear();
-  if (recognition) {
-    try { recognition.onend = null; recognition.stop(); } catch (e) {}
+
+  if (restartTimer) {
+    clearTimeout(restartTimer);
+    restartTimer = null;
   }
+
+  const current = recognition;
   recognition = null;
-  finalResultsByIndex.clear();
+
+  if (current) {
+    current.onend = null;
+    try {
+      current.stop();
+    } catch (e) {}
+  }
+
   micBtn.classList.remove('is-active');
   micBtn.title = 'Dicter les prix';
   micBtn.setAttribute('aria-label', 'Dicter les prix');
+
   document.getElementById('micCaption').textContent = 'Appuie pour dicter';
+
   status.textContent = 'Pause : le texte reconnu est conservé. Vérifie-le, puis crée la liste ou reprends la dictée.';
 }
 
 function startSpeech() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
   if (!SR) {
     document.getElementById('micCaption').textContent = 'Micro non disponible';
     status.textContent = 'Dictée non prise en charge ici. Essaie dans Chrome sur HTTPS.';
     return;
   }
+
   if (dictationSession) return;
 
   pauseRequested = false;
   dictationSession = true;
   sessionBaseText = input.value.trim();
-  finalResultsByIndex.clear();
+
   micBtn.classList.add('is-active');
   micBtn.title = 'Micro actif — appuie sur Pause pour arrêter';
   micBtn.setAttribute('aria-label', 'Micro actif');
+
   document.getElementById('micCaption').textContent = 'Micro actif';
-  status.textContent = 'Micro actif. Les prix apparaissent pendant que tu parles. Appuie sur Pause pour arrêter.';
+  status.textContent = 'Micro actif. Dicte tes prix; ils apparaîtront au fur et à mesure.';
 
   function launchRecognition() {
     if (!dictationSession || pauseRequested) return;
+
+    let current = null;
+
     try {
-      const current = new SR();
+      current = new SR();
       recognition = current;
+
       current.lang = 'fr-CA';
       current.continuous = true;
       current.interimResults = true;
       current.maxAlternatives = 1;
 
+      // Les résultats finaux sont conservés par index.
+      // Le texte provisoire est affiché séparément.
+      const sessionFinals = new Map();
+
       current.onresult = event => {
-        // Les résultats finaux sont mémorisés par index; les provisoires sont
-        // seulement affichés et remplacés à chaque mise à jour du navigateur.
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        let interimText = '';
+
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
           const transcript = (result && result[0] && result[0].transcript || '').trim();
-          if (result && result.isFinal) {
-            if (transcript) finalResultsByIndex.set(i, transcript);
-            else finalResultsByIndex.delete(i);
+
+          if (result.isFinal) {
+            if (transcript) {
+              sessionFinals.set(i, transcript);
+            } else {
+              sessionFinals.delete(i);
+            }
+          } else if (transcript) {
+            interimText += (interimText ? ' ' : '') + transcript;
           }
         }
 
-        const finals = [...finalResultsByIndex.entries()]
-          .sort((a, b) => a[0] - b[0]).map(entry => entry[1]).filter(Boolean);
-        const interims = [];
-        for (let i = 0; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result && !result.isFinal) {
-            const transcript = (result[0] && result[0].transcript || '').trim();
-            if (transcript) interims.push(transcript);
-          }
-        }
-        const finalText = finals.join(', ');
-        const interimText = interims.join(' ');
-        const visibleText = [sessionBaseText, finalText, interimText]
-          .filter(Boolean).join(', ').trim();
-        input.value = visibleText;
-        const confirmedCount = parsePrices([sessionBaseText, finalText].filter(Boolean).join(', ')).length;
-        status.textContent = `Micro actif · ${confirmedCount} prix confirmé(s)${interimText ? ' · reconnaissance en cours…' : ''}.`;
+        const finalText = [...sessionFinals.entries()]
+          .sort((a, b) => a[0] - b[0])
+          .map(x => x[1])
+          .join(', ');
+
+        input.value = [
+          sessionBaseText,
+          finalText,
+          interimText
+        ].filter(Boolean).join(', ').trim();
+
+        const count = parsePrices(
+          [sessionBaseText, finalText].filter(Boolean).join(', ')
+        ).length;
+
+        status.textContent =
+          `Micro actif · ${count} prix confirmé(s)` +
+          (interimText ? ' · reconnaissance en cours…' : '') + '.';
       };
 
       current.onerror = event => {
-        // Certaines versions Android émettent no-speech après un silence.
-        // Laisser onend relancer la reconnaissance dans ce cas.
         if (event.error && !['no-speech', 'aborted'].includes(event.error)) {
           dictationSession = false;
+          pauseRequested = true;
+
           micBtn.classList.remove('is-active');
           document.getElementById('micCaption').textContent = 'Appuie pour dicter';
-          status.textContent = 'Erreur micro : ' + event.error + '. Le texte déjà reconnu reste visible.';
+
+          status.textContent =
+            'Erreur micro : ' + event.error + '. Le texte reconnu reste visible.';
         }
       };
 
       current.onend = () => {
         if (recognition !== current) return;
-        // Consolider les résultats finaux avant de redémarrer une nouvelle
-        // session Android (les index de résultats repartent alors à zéro).
-        const finals = [...finalResultsByIndex.entries()]
-          .sort((a, b) => a[0] - b[0]).map(entry => entry[1]).filter(Boolean);
-        const consolidated = [sessionBaseText, finals.join(', ')].filter(Boolean).join(', ').trim();
-        input.value = consolidated;
-        sessionBaseText = consolidated;
-        finalResultsByIndex.clear();
+
+        const finalText = [...sessionFinals.entries()]
+          .sort((a, b) => a[0] - b[0])
+          .map(x => x[1])
+          .join(', ');
+
+        // On ajoute les résultats finaux une seule fois à la base.
+        sessionBaseText = [
+          sessionBaseText,
+          finalText
+        ].filter(Boolean).join(', ').trim();
+
+        input.value = sessionBaseText;
         recognition = null;
 
         if (dictationSession && !pauseRequested) {
-          status.textContent = 'Micro actif · reprise de l’écoute…';
+          status.textContent = 'Micro actif · reprise automatique de l’écoute…';
+
           restartTimer = setTimeout(() => {
             restartTimer = null;
             launchRecognition();
-          }, 250);
+          }, 350);
         } else {
           dictationSession = false;
+
           micBtn.classList.remove('is-active');
           micBtn.title = 'Dicter les prix';
           micBtn.setAttribute('aria-label', 'Dicter les prix');
+
           document.getElementById('micCaption').textContent = 'Appuie pour dicter';
           status.textContent = 'Micro arrêté. Le texte est conservé.';
         }
       };
 
       current.start();
+
     } catch (e) {
+      if (recognition === current) recognition = null;
+
       dictationSession = false;
+      pauseRequested = true;
+
       micBtn.classList.remove('is-active');
       document.getElementById('micCaption').textContent = 'Appuie pour dicter';
+
       status.textContent = 'Impossible de démarrer le micro. Essaie dans Chrome sur HTTPS.';
     }
   }
@@ -435,38 +461,64 @@ function startSpeech() {
   launchRecognition();
 }
 
+/* ===========================
+   BOUTONS ET ÉVÉNEMENTS
+   =========================== */
+
 micBtn.addEventListener('click', startSpeech);
+
 document.getElementById('stopBtn').addEventListener('click', stopSpeech);
+
 document.getElementById('loadBtn').addEventListener('click', addFromInput);
 document.getElementById('addBtn').addEventListener('click', addFromInput);
+
 document.getElementById('clearBtn').addEventListener('click', () => {
   prices = [];
   sessionBaseText = '';
   input.value = '';
+
   savePrices();
-  if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
-  finalResultsByIndex.clear();
-  if (recognition) {
-    try { recognition.onend = null; recognition.stop(); } catch (e) {}
+
+  if (restartTimer) {
+    clearTimeout(restartTimer);
+    restartTimer = null;
   }
+
+  if (recognition) {
+    try {
+      recognition.onend = null;
+      recognition.stop();
+    } catch (e) {}
+  }
+
   recognition = null;
   dictationSession = false;
   pauseRequested = true;
-  micBtn.classList.remove('is-active'); micBtn.title = 'Dicter les prix'; micBtn.setAttribute('aria-label', 'Dicter les prix');
+
+  micBtn.classList.remove('is-active');
+  micBtn.title = 'Dicter les prix';
+  micBtn.setAttribute('aria-label', 'Dicter les prix');
+
   render();
   status.textContent = 'Liste effacée.';
 });
+
 document.getElementById('fontSize').addEventListener('input', render);
 document.getElementById('perLabel').addEventListener('change', render);
+
 document.getElementById('printBtn').addEventListener('click', () => {
-  if (!prices.length) { status.textContent = 'Ajoute des prix avant d’imprimer.'; return; }
+  if (!prices.length) {
+    status.textContent = 'Ajoute des prix avant d’imprimer.';
+    return;
+  }
+
   window.print();
 });
 
 render();
-if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+
+if ('serviceWorker' in navigator &&
+    (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 </script>
-</body>
-</html>
