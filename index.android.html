@@ -349,23 +349,46 @@ function startSpeech() {
       current.lang = 'fr-CA';
       current.continuous = true;
       // Même principe que la version PC : ne traiter que les résultats confirmés.
-      current.interimResults = false;
+      current.interimResults = true;
       current.maxAlternatives = 1;
 
       let sessionFinalText = '';
       current.onresult = event => {
-        const finalSegments = [];
-        for (let i = 0; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (!result || !result.isFinal) continue;
-          const transcript = (result[0] && result[0].transcript || '').trim();
-          if (transcript) finalSegments.push(transcript);
+    const finalSegments = [];
+    const interimSegments = [];
+
+    for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (!result) continue;
+
+        const transcript = (result[0] && result[0].transcript || '').trim();
+        if (!transcript) continue;
+
+        if (result.isFinal) {
+            finalSegments.push(transcript);
+        } else {
+            interimSegments.push(transcript);
         }
-        // event.results représente l'ensemble des résultats de la session courante :
-        // on reconstruit au lieu d'ajouter chaque événement, pour éviter les doublons.
-        sessionFinalText = finalSegments.join(', ');
-        input.value = [sessionBaseText, sessionFinalText].filter(Boolean).join(', ').trim();
-        const count = parsePrices(input.value).length;
+    }
+
+    // On conserve uniquement les résultats confirmés.
+    sessionFinalText = finalSegments.join(', ');
+
+    // Les résultats provisoires sont affichés, mais pas enregistrés définitivement.
+    const liveText = interimSegments.join(', ');
+
+    input.value = [
+        sessionBaseText,
+        sessionFinalText,
+        liveText
+    ].filter(Boolean).join(', ').trim();
+
+    const count = parsePrices(
+        [sessionBaseText, sessionFinalText].filter(Boolean).join(', ')
+    ).length;
+
+    status.textContent = `Micro actif · ${count} prix confirmé(s).`;
+};
         status.textContent = `Micro actif · ${count} prix confirmé(s).`;
       };
 
