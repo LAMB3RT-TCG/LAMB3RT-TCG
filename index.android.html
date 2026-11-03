@@ -309,20 +309,12 @@ function render() {
 function stopSpeech() {
   pauseRequested = true;
   dictationSession = false;
-
-  if (restartTimer) {
-    clearTimeout(restartTimer);
-    restartTimer = null;
+  if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
+  finalResultsByIndex.clear();
+  if (recognition) {
+    try { recognition.onend = null; recognition.stop(); } catch (e) {}
   }
-
-  const current = recognition;
   recognition = null;
-
-  if (current) {
-    current.onend = null;
-    try { current.stop(); } catch (e) {}
-  }
-
   finalResultsByIndex.clear();
   micBtn.classList.remove('is-active');
   micBtn.title = 'Dicter les prix';
@@ -333,102 +325,95 @@ function stopSpeech() {
 
 function startSpeech() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-
   if (!SR) {
     document.getElementById('micCaption').textContent = 'Micro non disponible';
     status.textContent = 'Dictée non prise en charge ici. Essaie dans Chrome sur HTTPS.';
     return;
   }
-
   if (dictationSession) return;
 
   pauseRequested = false;
   dictationSession = true;
   sessionBaseText = input.value.trim();
   finalResultsByIndex.clear();
-
   micBtn.classList.add('is-active');
   micBtn.title = 'Micro actif — appuie sur Pause pour arrêter';
   micBtn.setAttribute('aria-label', 'Micro actif');
   document.getElementById('micCaption').textContent = 'Micro actif';
-  status.textContent = 'Micro actif. Dicte tes prix; ils apparaîtront au fur et à mesure.';
+  status.textContent = 'Micro actif. Les prix apparaissent pendant que tu parles. Appuie sur Pause pour arrêter.';
 
   function launchRecognition() {
     if (!dictationSession || pauseRequested) return;
-
-    let current;
-    let utteranceFinal = '';
-
     try {
-      current = new SR();
+      const current = new SR();
       recognition = current;
-
       current.lang = 'fr-CA';
-
-      // Android coupe parfois les sessions continues. On traite une courte
-      // session à la fois, puis on relance automatiquement l'écoute.
-      current.continuous = false;
+      current.continuous = true;
       current.interimResults = true;
       current.maxAlternatives = 1;
 
       current.onresult = event => {
-        let interimText = '';
-        let finalParts = [];
-
-        for (let i = 0; i < event.results.length; i++) {
+        // Les résultats finaux sont mémorisés par index; les provisoires sont
+        // seulement affichés et remplacés à chaque mise à jour du navigateur.
+        for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
           const transcript = (result && result[0] && result[0].transcript || '').trim();
-          if (!transcript) continue;
-
-          if (result.isFinal) {
-            finalParts.push(transcript);
-          } else {
-            interimText += (interimText ? ' ' : '') + transcript;
+          if (result && result.isFinal) {
+            if (transcript) finalResultsByIndex.set(i, transcript);
+            else finalResultsByIndex.delete(i);
           }
         }
 
-        utteranceFinal = finalParts.join(' ').trim();
-
-        const confirmedText = [sessionBaseText, utteranceFinal].filter(Boolean).join(', ');
-        input.value = [confirmedText, interimText].filter(Boolean).join(', ').trim();
-
-        const count = parsePrices(confirmedText).length;
-        status.textContent =
-          `Micro actif · ${count} prix confirmé(s)` +
-          (interimText ? ' · reconnaissance en cours…' : '') + '.';
+        const finals = [...finalResultsByIndex.entries()]
+          .sort((a, b) => a[0] - b[0]).map(entry => entry[1]).filter(Boolean);
+        const interims = [];
+        for (let i = 0; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result && !result.isFinal) {
+            const transcript = (result[0] && result[0].transcript || '').trim();
+            if (transcript) interims.push(transcript);
+          }
+        }
+        const finalText = finals.join(', ');
+        const interimText = interims.join(' ');
+        const visibleText = [sessionBaseText, finalText, interimText]
+          .filter(Boolean).join(', ').trim();
+        input.value = visibleText;
+        const confirmedCount = parsePrices([sessionBaseText, finalText].filter(Boolean).join(', ')).length;
+        status.textContent = `Micro actif · ${confirmedCount} prix confirmé(s)${interimText ? ' · reconnaissance en cours…' : ''}.`;
       };
 
       current.onerror = event => {
-        // no-speech et aborted sont des fins normales sur certains Android :
-        // onend relancera l'écoute tant que l'utilisateur n'a pas fait Pause.
+        // Certaines versions Android émettent no-speech après un silence.
+        // Laisser onend relancer la reconnaissance dans ce cas.
         if (event.error && !['no-speech', 'aborted'].includes(event.error)) {
           dictationSession = false;
-          pauseRequested = true;
           micBtn.classList.remove('is-active');
-          micBtn.title = 'Dicter les prix';
-          micBtn.setAttribute('aria-label', 'Dicter les prix');
           document.getElementById('micCaption').textContent = 'Appuie pour dicter';
-          status.textContent = 'Erreur micro : ' + event.error + '. Le texte reconnu reste visible.';
+          status.textContent = 'Erreur micro : ' + event.error + '. Le texte déjà reconnu reste visible.';
         }
       };
 
       current.onend = () => {
         if (recognition !== current) return;
-
-        if (utteranceFinal) {
-          sessionBaseText = [sessionBaseText, utteranceFinal]
-            .filter(Boolean).join(', ').trim();
-        }
-
-        input.value = sessionBaseText;
+        // Consolider les résultats finaux avant de redémarrer une nouvelle
+        // session Android (les index de résultats repartent alors à zéro).
+        const finals = [...finalResultsByIndex.entries()]
+          .sort((a, b) => a[0] - b[0]).map(entry => entry[1]).filter(Boolean);
+        const consolidated = [sessionBaseText, finals.join(', ')].filter(Boolean).join(', ').trim();
+        input.value = consolidated;
+        sessionBaseText = consolidated;
+        finalResultsByIndex.clear();
         recognition = null;
 
         if (dictationSession && !pauseRequested) {
-          status.textContent = 'Micro actif · reprise automatique de l’écoute…';
+          status.textContent = 'Micro actif · reprise de l’écoute…';
+          // Redémarrer dès que le navigateur libère la session précédente.
+          // Le délai de 250 ms créait une coupure audible/visible entre les prix.
           restartTimer = setTimeout(() => {
             restartTimer = null;
-            launchRecognition();
-          }, 300);
+            if (dictationSession && !pauseRequested) launchRecognition();
+          }, 0);
         } else {
           dictationSession = false;
           micBtn.classList.remove('is-active');
@@ -441,13 +426,8 @@ function startSpeech() {
 
       current.start();
     } catch (e) {
-      if (recognition === current) recognition = null;
-
       dictationSession = false;
-      pauseRequested = true;
       micBtn.classList.remove('is-active');
-      micBtn.title = 'Dicter les prix';
-      micBtn.setAttribute('aria-label', 'Dicter les prix');
       document.getElementById('micCaption').textContent = 'Appuie pour dicter';
       status.textContent = 'Impossible de démarrer le micro. Essaie dans Chrome sur HTTPS.';
     }
