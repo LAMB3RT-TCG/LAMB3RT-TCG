@@ -24,7 +24,10 @@ button:hover{filter:brightness(1.08)}button:active{transform:scale(.98)}
 .secondary{background:#29251d;border-color:#69552e;color:#f3d98a}
 .danger{background:#351c1c;border-color:#6b3030;color:#ffb9b9}
 .actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0}
-#micBtn{width:58px;height:58px;padding:0;border-radius:50%;font-size:25px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 0 4px #d9b45b20,0 5px 18px #0008}
+#micBtn{width:64px;height:64px;min-width:64px;padding:0;border-radius:50%;font-size:27px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex:0 0 64px;box-shadow:0 0 0 4px #d9b45b20,0 5px 18px #0008}
+#micBtn .mic-icon{display:block;line-height:1}
+#micBtn.is-active{background:linear-gradient(135deg,#ffe68b,#d9b45b);box-shadow:0 0 0 5px #d9b45b40,0 0 18px #d9b45b55}
+.mic-caption{font-size:13px;color:var(--muted);align-self:center}
 #stopBtn{min-height:44px}
 textarea{width:100%;min-height:85px;border:1px solid #50452f;background:#0d0e10;color:#fff8e8;border-radius:10px;padding:12px;font:16px system-ui;outline:none}
 textarea:focus,input:focus,select:focus{border-color:var(--gold);box-shadow:0 0 0 2px #d9b45b22}
@@ -62,7 +65,8 @@ footer{text-align:center;font-size:12px;color:#a9a292;padding:8px 12px 24px}
 <h2>1. Dicter ou entrer les prix</h2>
 <p class="hint">Dicte les prix avec de petites pauses naturelles. Vérifie le texte reconnu avant de créer la liste. Les résultats vocaux confirmés sont ajoutés une seule fois.</p>
 <div class="actions no-print">
-<button class="primary" id="micBtn" title="Dicter les prix" aria-label="Dicter les prix">🎙️</button>
+<button class="primary" id="micBtn" title="Dicter les prix" aria-label="Dicter les prix"><span class="mic-icon" aria-hidden="true">🎙️</span></button>
+<span id="micCaption" class="mic-caption">Appuie pour dicter</span>
 <button class="secondary" id="stopBtn">⏸️ Pause</button>
 </div>
 <textarea id="priceInput" placeholder="Ex. : 120, 78, 35, 50" aria-label="Prix dictés ou saisis"></textarea>
@@ -288,14 +292,14 @@ function stopSpeech() {
     try { recognition.stop(); } catch (e) {}
   }
   dictationSession = false;
-  micBtn.textContent = '🎙️ Dicter les prix';
-  status.textContent = 'Pause : le texte reconnu est conservé. Vérifie-le, puis crée la liste ou reprends la dictée.';
+  micBtn.classList.remove('is-active'); micBtn.title = 'Dicter les prix'; micBtn.setAttribute('aria-label', 'Dicter les prix');
+  document.getElementById('micCaption').textContent = 'Appuie pour dicter'; status.textContent = 'Pause : le texte reconnu est conservé. Vérifie-le, puis crée la liste ou reprends la dictée.';
 }
 
 function startSpeech() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
-    status.textContent = 'Dictée non prise en charge ici. Essaie dans Chrome sur HTTPS.';
+    document.getElementById('micCaption').textContent = 'Micro non disponible'; status.textContent = 'Dictée non prise en charge ici. Essaie dans Chrome sur HTTPS.';
     return;
   }
   if (dictationSession) return;
@@ -311,8 +315,8 @@ function startSpeech() {
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     dictationSession = true;
-    micBtn.textContent = '🎙️ Micro actif';
-    status.textContent = 'Micro actif. Parle avec de petites pauses naturelles.';
+    micBtn.classList.add('is-active'); micBtn.title = 'Micro actif'; micBtn.setAttribute('aria-label', 'Micro actif');
+    document.getElementById('micCaption').textContent = 'Micro actif'; status.textContent = 'Micro actif. Pour séparer les montants, dis chaque prix suivi de « dollars » (ex. « vingt-deux dollars, soixante-trois dollars »). Vérifie le texte reconnu avant de créer la liste.';
 
     recognition.onresult = event => {
       // L’API expose toute la liste des résultats; resultIndex indique le
@@ -343,24 +347,24 @@ function startSpeech() {
 
     recognition.onerror = event => {
       dictationSession = false;
-      micBtn.textContent = '🎙️ Dicter les prix';
-      status.textContent = 'Erreur micro : ' + event.error + '. Le texte déjà reconnu reste visible.';
+      micBtn.classList.remove('is-active'); micBtn.title = 'Dicter les prix'; micBtn.setAttribute('aria-label', 'Dicter les prix');
+      document.getElementById('micCaption').textContent = 'Appuie pour dicter'; status.textContent = 'Erreur micro : ' + event.error + '. Le texte déjà reconnu reste visible.';
     };
 
     recognition.onend = () => {
       dictationSession = false;
-      micBtn.textContent = '🎙️ Dicter les prix';
+      micBtn.classList.remove('is-active'); micBtn.title = 'Dicter les prix'; micBtn.setAttribute('aria-label', 'Dicter les prix');
       sessionBaseText = input.value.trim();
       if (!pauseRequested && status.textContent.startsWith('Micro actif')) {
-        status.textContent = 'Micro arrêté. Le texte est conservé; appuie sur Dicter les prix pour continuer.';
+        document.getElementById('micCaption').textContent = 'Appuie pour dicter'; status.textContent = 'Micro arrêté. Le texte est conservé; vérifie-le avant de créer la liste.';
       }
     };
 
     recognition.start();
   } catch (e) {
     dictationSession = false;
-    micBtn.textContent = '🎙️ Dicter les prix';
-    status.textContent = 'Impossible de démarrer le micro. Essaie dans Chrome sur HTTPS.';
+    micBtn.classList.remove('is-active'); micBtn.title = 'Dicter les prix'; micBtn.setAttribute('aria-label', 'Dicter les prix');
+    document.getElementById('micCaption').textContent = 'Appuie pour dicter'; status.textContent = 'Impossible de démarrer le micro. Essaie dans Chrome sur HTTPS.';
   }
 }
 
@@ -380,7 +384,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   recognition = null;
   dictationSession = false;
   pauseRequested = true;
-  micBtn.textContent = '🎙️ Dicter les prix';
+  micBtn.classList.remove('is-active'); micBtn.title = 'Dicter les prix'; micBtn.setAttribute('aria-label', 'Dicter les prix');
   render();
   status.textContent = 'Liste effacée.';
 });
