@@ -1,14 +1,21 @@
 {
-  "id": ".",
+  "id": "./index.android.html",
   "name": "LAMB3RT TCG — Étiquettes",
   "short_name": "LAMB3RT TCG",
   "description": "Dictée de prix et préparation d'étiquettes Pokémon pour LAMB3RT TCG.",
   "lang": "fr-CA",
-  "start_url": "./",
+  "start_url": "./index.android.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f3f5f8",
   "theme_color": "#101827",
-  "icons": [{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
 }
