@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#101827">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
-<title>LAMB3RT TCG — Étiquettes rapides</title>
+<title>LAMB3RT TCG — Étiquettes rapides (Android)</title>
 <style>
 *{box-sizing:border-box}
 :root{color-scheme:dark;--gold:#d9b45b;--gold-light:#f3d98a;--black:#090a0c;--panel:#15171b;--line:#35302a;--muted:#b8b2a5}
@@ -103,7 +103,6 @@ let recognition = null;
 let dictationSession = false;
 let pauseRequested = false;
 let sessionBaseText = '';
-let finalResultsByIndex = new Map();
 let restartTimer = null;
 
 const input = document.getElementById('priceInput');
@@ -310,12 +309,12 @@ function stopSpeech() {
   pauseRequested = true;
   dictationSession = false;
   if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
-  finalResultsByIndex.clear();
-  if (recognition) {
-    try { recognition.onend = null; recognition.stop(); } catch (e) {}
-  }
+  const current = recognition;
   recognition = null;
-  finalResultsByIndex.clear();
+  if (current) {
+    current.onend = null;
+    try { current.stop(); } catch (e) {}
+  }
   micBtn.classList.remove('is-active');
   micBtn.title = 'Dicter les prix';
   micBtn.setAttribute('aria-label', 'Dicter les prix');
@@ -335,51 +334,50 @@ function startSpeech() {
   pauseRequested = false;
   dictationSession = true;
   sessionBaseText = input.value.trim();
-  finalResultsByIndex.clear();
   micBtn.classList.add('is-active');
   micBtn.title = 'Micro actif — appuie sur Pause pour arrêter';
   micBtn.setAttribute('aria-label', 'Micro actif');
   document.getElementById('micCaption').textContent = 'Micro actif';
-  status.textContent = 'Micro actif. Les prix apparaissent pendant que tu parles. Appuie sur Pause pour arrêter.';
+  status.textContent = 'Micro actif. Dicte tes prix naturellement. Appuie sur Pause pour arrêter.';
 
   function launchRecognition() {
     if (!dictationSession || pauseRequested) return;
+    let current;
     try {
-      const current = new SR();
+      current = new SR();
       recognition = current;
       current.lang = 'fr-CA';
       current.continuous = true;
+      // Même principe que la version PC : ne traiter que les résultats confirmés.
       current.interimResults = false;
       current.maxAlternatives = 1;
 
+      let sessionFinalText = '';
       current.onresult = event => {
-        // Les résultats finaux sont mémorisés par index; les provisoires sont
-        // seulement affichés et remplacés à chaque mise à jour du navigateur.
-        for (let i = event.resultIndex; i < event.results.length; i++) {
+        const finalSegments = [];
+        for (let i = 0; i < event.results.length; i++) {
           const result = event.results[i];
-          const transcript = (result && result[0] && result[0].transcript || '').trim();
-          if (result && result.isFinal) {
-            if (transcript) finalResultsByIndex.set(i, transcript);
-            else finalResultsByIndex.delete(i);
-          }
+          if (!result || !result.isFinal) continue;
+          const transcript = (result[0] && result[0].transcript || '').trim();
+          if (transcript) finalSegments.push(transcript);
         }
-
-        const finals = [...finalResultsByIndex.entries()]
-          .sort((a, b) => a[0] - b[0]).map(entry => entry[1]).filter(Boolean);
-        const finalText = finals.join(', ');
-        // Afficher uniquement les segments confirmés : aucun résultat provisoire
-        // n'est concaténé, ce qui évite les répétitions visibles sur Android.
-        input.value = [sessionBaseText, finalText].filter(Boolean).join(', ').trim();
-        const confirmedCount = parsePrices(input.value).length;
-        status.textContent = `Micro actif · ${confirmedCount} prix confirmé(s).`;
+        // event.results représente l'ensemble des résultats de la session courante :
+        // on reconstruit au lieu d'ajouter chaque événement, pour éviter les doublons.
+        sessionFinalText = finalSegments.join(', ');
+        input.value = [sessionBaseText, sessionFinalText].filter(Boolean).join(', ').trim();
+        const count = parsePrices(input.value).length;
+        status.textContent = `Micro actif · ${count} prix confirmé(s).`;
       };
 
       current.onerror = event => {
-        // Certaines versions Android émettent no-speech après un silence.
-        // Laisser onend relancer la reconnaissance dans ce cas.
+        // Les fins no-speech/aborted sont normales sur Android; onend relance.
         if (event.error && !['no-speech', 'aborted'].includes(event.error)) {
           dictationSession = false;
+          pauseRequested = true;
+          if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
           micBtn.classList.remove('is-active');
+          micBtn.title = 'Dicter les prix';
+          micBtn.setAttribute('aria-label', 'Dicter les prix');
           document.getElementById('micCaption').textContent = 'Appuie pour dicter';
           status.textContent = 'Erreur micro : ' + event.error + '. Le texte déjà reconnu reste visible.';
         }
@@ -387,24 +385,17 @@ function startSpeech() {
 
       current.onend = () => {
         if (recognition !== current) return;
-        // Consolider les résultats finaux avant de redémarrer une nouvelle
-        // session Android (les index de résultats repartent alors à zéro).
-        const finals = [...finalResultsByIndex.entries()]
-          .sort((a, b) => a[0] - b[0]).map(entry => entry[1]).filter(Boolean);
-        const consolidated = [sessionBaseText, finals.join(', ')].filter(Boolean).join(', ').trim();
-        input.value = consolidated;
-        sessionBaseText = consolidated;
-        finalResultsByIndex.clear();
+        // Figer les résultats confirmés avant toute nouvelle instance.
+        sessionBaseText = [sessionBaseText, sessionFinalText].filter(Boolean).join(', ').trim();
+        input.value = sessionBaseText;
         recognition = null;
 
         if (dictationSession && !pauseRequested) {
           status.textContent = 'Micro actif · reprise de l’écoute…';
-          // Redémarrer dès que le navigateur libère la session précédente.
-          // Le délai de 250 ms créait une coupure audible/visible entre les prix.
           restartTimer = setTimeout(() => {
             restartTimer = null;
-            if (dictationSession && !pauseRequested) launchRecognition();
-          }, 0);
+            launchRecognition();
+          }, 100);
         } else {
           dictationSession = false;
           micBtn.classList.remove('is-active');
@@ -417,8 +408,12 @@ function startSpeech() {
 
       current.start();
     } catch (e) {
+      if (recognition === current) recognition = null;
       dictationSession = false;
+      pauseRequested = true;
       micBtn.classList.remove('is-active');
+      micBtn.title = 'Dicter les prix';
+      micBtn.setAttribute('aria-label', 'Dicter les prix');
       document.getElementById('micCaption').textContent = 'Appuie pour dicter';
       status.textContent = 'Impossible de démarrer le micro. Essaie dans Chrome sur HTTPS.';
     }
@@ -436,8 +431,6 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   sessionBaseText = '';
   input.value = '';
   savePrices();
-  if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
-  finalResultsByIndex.clear();
   if (recognition) {
     try { recognition.onend = null; recognition.stop(); } catch (e) {}
   }
