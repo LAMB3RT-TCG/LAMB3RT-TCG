@@ -63,7 +63,7 @@ footer{text-align:center;font-size:12px;color:#a9a292;padding:8px 12px 24px}
 <main>
 <section class="card">
 <h2>1. Dicter ou entrer les prix</h2>
-<p class="hint">Dicte les prix avec de petites pauses naturelles. Vérifie le texte reconnu avant de créer la liste. Les résultats vocaux confirmés sont ajoutés une seule fois.</p>
+<p class="hint">Dicte les prix naturellement. Le texte reconnu apparaît pendant la dictée; vérifie-le avant de créer la liste.</p>
 <div class="actions no-print">
 <button class="primary" id="micBtn" title="Dicter les prix" aria-label="Dicter les prix"><span class="mic-icon" aria-hidden="true">🎙️</span></button>
 <span id="micCaption" class="mic-caption">Appuie pour dicter</span>
@@ -162,6 +162,22 @@ function frenchNumberWordsToNumber(phrase) {
   return i === w.length ? n : null;
 }
 
+function splitFusedPrice(value) {
+  const digits = String(value);
+  // Détecte uniquement les grands nombres continus qui pourraient être deux prix fusionnés.
+  if (!/^\d{4,6}$/.test(digits) || Number(digits) <= 200) return null;
+  const candidates = [];
+  for (let cut = 2; cut < digits.length; cut++) {
+    const left = Number(digits.slice(0, cut));
+    const right = Number(digits.slice(cut));
+    if (left >= 15 && left <= 200 && right >= 15 && right <= 200) {
+      candidates.push([left, right]);
+    }
+  }
+  // Si plusieurs découpages sont possibles, ne devine pas : laisse le texte vérifiable.
+  return candidates.length === 1 ? candidates[0] : null;
+}
+
 function parsePrices(text) {
   const raw = text.trim();
   if (!raw) return [];
@@ -179,8 +195,13 @@ function parsePrices(text) {
   for (const chunk of chunks) {
     const numeric = chunk.match(/^\s*(\d+(?:[.,]\d{1,2})?)\s*$/);
     if (numeric) {
-      const value = Number(numeric[1].replace(',', '.'));
-      if (Number.isFinite(value) && value >= 0) out.push(value);
+      const token = numeric[1].replace(',', '.');
+      const value = Number(token);
+      if (Number.isFinite(value) && value >= 0) {
+        const split = !token.includes('.') ? splitFusedPrice(token) : null;
+        if (split) out.push(...split);
+        else out.push(value);
+      }
       continue;
     }
 
@@ -312,37 +333,26 @@ function startSpeech() {
     recognition = new SR();
     recognition.lang = 'fr-CA';
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     dictationSession = true;
     micBtn.classList.add('is-active'); micBtn.title = 'Micro actif'; micBtn.setAttribute('aria-label', 'Micro actif');
-    document.getElementById('micCaption').textContent = 'Micro actif'; status.textContent = 'Micro actif. Pour séparer les montants, dis chaque prix suivi de « dollars » (ex. « vingt-deux dollars, soixante-trois dollars »). Vérifie le texte reconnu avant de créer la liste.';
+    document.getElementById('micCaption').textContent = 'Micro actif'; status.textContent = 'Micro actif. Dicte tes prix naturellement : ils apparaîtront au fur et à mesure. Vérifie le texte avant de créer la liste.';
 
     recognition.onresult = event => {
-      // L’API expose toute la liste des résultats; resultIndex indique le
-      // premier index modifié. On remplace les résultats concernés par index
-      // plutôt que de concaténer aveuglément chaque événement.
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      // Recompose la transcription complète à chaque événement, y compris les
+      // résultats provisoires, pour afficher la reconnaissance pendant la dictée.
+      const recognized = [];
+      for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
-        if (result && result.isFinal) {
-          const transcript = (result[0]?.transcript || '').trim();
-          if (transcript) finalResultsByIndex.set(i, transcript);
-          else finalResultsByIndex.delete(i);
-        } else {
-          finalResultsByIndex.delete(i);
-        }
+        const transcript = (result && result[0] && result[0].transcript || '').trim();
+        if (transcript) recognized.push(transcript);
       }
 
-      const recognized = [...finalResultsByIndex.entries()]
-        .sort((a,b) => a[0] - b[0])
-        .map(entry => entry[1])
-        .filter(Boolean);
-
-      // La virgule marque une frontière entre résultats confirmés du moteur.
       const recognizedText = recognized.join(', ');
       input.value = [sessionBaseText, recognizedText].filter(Boolean).join(', ').trim();
       const count = parsePrices(input.value).length;
-      status.textContent = `Micro actif · ${count} prix détecté(s). Vérifie la zone de texte avant de créer la liste.`;
+      status.textContent = `Micro actif · ${count} prix détecté(s), provisoires inclus. Vérifie le texte avant de créer la liste.`;
     };
 
     recognition.onerror = event => {
