@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LAMB3RT TCG — Module étiquettes / NIIMBOT</title>
+<style>
+  :root { color-scheme: dark; --bg:#101827; --panel:#1d293b; --gold:#f6c85f; --text:#f4f6fb; --muted:#b8c2d4; --line:#526176; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:18px; font-family:system-ui,-apple-system,Segoe UI,sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width:760px; margin:auto; }
+  h1 { font-size:1.45rem; margin:0 0 8px; }
+  p { color:var(--muted); line-height:1.45; }
+  section { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin:14px 0; }
+  label { display:block; margin:10px 0 5px; color:var(--muted); }
+  input, select, button { font:inherit; border-radius:9px; padding:11px; }
+  input, select { width:100%; color:var(--text); background:#111b2a; border:1px solid var(--line); }
+  button { border:0; background:var(--gold); color:#172033; font-weight:700; cursor:pointer; margin:5px 5px 5px 0; }
+  button.secondary { background:#34445d; color:white; border:1px solid #64748b; }
+  button:disabled { opacity:.45; cursor:wait; }
+  .status { padding:10px; background:#111b2a; border-radius:8px; min-height:42px; white-space:pre-wrap; }
+  .preview-wrap { background:#e9edf2; padding:14px; border-radius:10px; overflow-x:auto; }
+  canvas.preview { display:block; width:min(100%,640px); height:auto; background:white; border:1px solid #9aa4b2; }
+  .caption { font-size:.9rem; margin-top:8px; color:var(--muted); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media(max-width:520px){ .row { grid-template-columns:1fr; } body{padding:12px;} }
+  .warning { border-left:4px solid var(--gold); padding:10px 12px; background:#293348; border-radius:6px; }
+  code { overflow-wrap:anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <h1>LAMB3RT TCG — Module étiquettes / NIIMBOT</h1>
+  <p>Module séparé de test. Aperçu 40 × 12 mm, deux prix côte à côte, espace central de 10 mm. Ce fichier ne modifie pas la page principale ni la version PC.</p>
+
+  <section>
+    <h2>1. Prix à tester</h2>
+    <label for="prices">Prix, séparés par des virgules</label>
+    <input id="prices" value="22, 25, 46, 53" autocomplete="off">
+    <div class="row">
+      <div>
+        <label for="fontSize">Grosseur du texte</label>
+        <select id="fontSize">
+          <option value="14">A — petite</option>
+          <option value="18" selected>B — moyenne</option>
+          <option value="22">C — grande</option>
+        </select>
+      </div>
+      <div>
+        <label for="density">Densité d'impression</label>
+        <select id="density">
+          <option value="1">1</option><option value="2">2</option>
+          <option value="3" selected>3 — défaut</option><option value="4">4</option><option value="5">5</option>
+        </select>
+      </div>
+    </div>
+    <button id="previewBtn" class="secondary">Actualiser l'aperçu</button>
+    <div class="preview-wrap"><canvas id="preview" class="preview" width="800" height="240"></canvas></div>
+    <div id="previewInfo" class="caption">Chaque étiquette utilise deux prix; un prix restant seul aura la moitié droite vide.</div>
+  </section>
+
+  <section>
+    <h2>2. Imprimante Bluetooth</h2>
+    <p>Ouvre ce fichier depuis le site publié en HTTPS, dans Chrome Android. Le Bluetooth ne fonctionne pas depuis un fichier local.</p>
+    <button id="connectBtn">Connecter / identifier la NIIMBOT</button>
+    <button id="disconnectBtn" class="secondary">Déconnecter</button>
+    <div id="status" class="status" role="status" aria-live="polite">Imprimante non connectée.</div>
+  </section>
+
+  <section>
+    <h2>3. Impression</h2>
+    <button id="printOneBtn">Imprimer la première étiquette test</button>
+    <button id="printAllBtn">Imprimer toutes les étiquettes</button>
+    <div class="warning"><strong>À savoir :</strong> le D110_M a été identifié et un test d'impression a réussi avec la démonstration. Il faut quand même valider sur papier les dimensions, la rotation, la coupe et les tailles de caractères avant de brancher ce module à la liste réelle du programme.</div>
+  </section>
+</main>
+<script src="https://raw.githubusercontent.com/iscarelli/niimbot-web-bluetooth/main/src/niimbot.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const preview = $('preview');
+  const pctx = preview.getContext('2d');
+  const status = $('status');
+  let connected = false;
+  let currentPrices = [];
+
+  // NIIMBOT D110_M: 203 dpi, 12 mm across printhead (~96 px), 40 mm along feed (~320 px).
+  const MODEL = {
+    name_prefixes: ['D110'],
+    id: 2320,
+    task: 'v4',
+    dpi: 203,
+    density: 3,
+    label_type: 1,
+    speed: 1
+  };
+  const SIZE = { w_px: 96, h_px: 320, offset_y_px: 0 };
+
+  function formatPrice(raw) {
+    const s = String(raw).trim().replace(/\$/g, '').replace(',', '.');
+    const n = Number(s);
+    if (!Number.isFinite(n) || s === '') return null;
+    return n.toLocaleString('fr-CA', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' $';
+  }
+
+  function readPrices() {
+    return $('prices').value.split(/[,\n;]+/).map(formatPrice).filter(Boolean);
+  }
+
+  function makePreviewLabel(price1, price2, fontSize) {
+    const c = document.createElement('canvas');
+    c.width = 800; c.height = 240;
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.strokeRect(1,1,798,238);
+    // 15 mm + 10 mm cut gap + 15 mm on a 40 mm label.
+    // Preview scaled to 20 px/mm: first section 300 px, gap 200 px, second section 300 px.
+    ctx.setLineDash([8,6]); ctx.strokeStyle = '#6b7280'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(400,8); ctx.lineTo(400,232); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#111'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '700 ' + fontSize + 'px Arial, sans-serif';
+    ctx.fillText(price1 || '', 150, 120, 286);
+    ctx.fillText(price2 || '', 650, 120, 286);
+    return c;
+  }
+
+  function renderPreview() {
+    currentPrices = readPrices();
+    const fs = Number($('fontSize').value);
+    pctx.clearRect(0,0,preview.width,preview.height);
+    pctx.fillStyle = '#fff'; pctx.fillRect(0,0,preview.width,preview.height);
+    let labels = 0;
+    for (let i=0; i<currentPrices.length; i+=2) {
+      if (labels) {
+        // In the UI canvas, show the first pair only; multiple pairs are listed below.
+        break;
+      }
+      const c = makePreviewLabel(currentPrices[i], currentPrices[i+1] || '', fs * 2);
+      pctx.drawImage(c,0,0,preview.width,preview.height);
+      labels++;
+    }
+    if (!currentPrices.length) {
+      pctx.fillStyle='#111'; pctx.font='28px Arial'; pctx.textAlign='center';
+      pctx.fillText('Entre des prix pour afficher l’aperçu',400,120);
+    }
+    const count = Math.ceil(currentPrices.length/2);
+    $('previewInfo').textContent = currentPrices.length + ' prix · ' + count + ' étiquette(s). Aperçu de la première paire. Le symbole $ est dessiné à la même taille que les chiffres.';
+  }
+
+  // Convert horizontal 40×12 mm preview to printer-native orientation:
+  // printer canvas is 96 px wide × 320 px feed length; the 40 mm axis runs along feed.
+  function makePrinterImage(price1, price2, fontSize) {
+    const wide = makePreviewLabel(price1, price2, fontSize * 2);
+    const out = document.createElement('canvas');
+    out.width = SIZE.w_px; out.height = SIZE.h_px;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,out.width,out.height);
+    ctx.translate(out.width, 0);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(wide, 0, 0, out.height, out.width);
+    return out.toDataURL('image/png');
+  }
+
+  function ensureDriver() {
+    if (!window.Niimbot) throw new Error('Le pilote NIIMBOT ne s’est pas chargé. Vérifie la connexion Internet et recharge la page.');
+    if (!Niimbot.isSupported()) throw new Error('Web Bluetooth n’est pas disponible. Ouvre la page publiée en HTTPS dans Chrome Android.');
+  }
+
+  $('previewBtn').addEventListener('click', renderPreview);
+  $('fontSize').addEventListener('change', renderPreview);
+  $('prices').addEventListener('input', renderPreview);
+
+  $('connectBtn').addEventListener('click', async () => {
+    $('connectBtn').disabled = true;
+    try {
+      ensureDriver();
+      status.textContent = 'Recherche de l’imprimante… Choisis D110_M-I819091778 dans la fenêtre Bluetooth.';
+      const info = await Niimbot.identify(MODEL);
+      connected = true;
+      status.textContent = 'Connexion réussie.\nModèle détecté : ' + (info && info.label ? info.label : (Niimbot.printer?.label || 'NIIMBOT')) +
+        '\nID : ' + (Niimbot.printer?.modelId ?? 'non communiqué') +
+        '\nVérifie que l’imprimante est bien la D110_M avant d’imprimer.';
+    } catch (e) {
+      connected = false;
+      status.textContent = 'Connexion non confirmée : ' + (e?.message || e);
+    } finally {
+      $('connectBtn').disabled = false;
+    }
+  });
+
+  $('disconnectBtn').addEventListener('click', async () => {
+    try { if (window.Niimbot) await Niimbot.disconnect(); } catch(e) {}
+    connected = false;
+    status.textContent = 'Imprimante déconnectée.';
+  });
+
+  async function printPair(index) {
+    ensureDriver();
+    const p1 = currentPrices[index] || '';
+    const p2 = currentPrices[index+1] || '';
+    const image = makePrinterImage(p1,p2,Number($('fontSize').value));
+    const model = {...MODEL, density:Number($('density').value)};
+    // printImage may connect automatically, but pairing must be initiated by this button tap.
+    await Niimbot.printImage(image, {model, size:SIZE, density:model.density});
+  }
+
+  $('printOneBtn').addEventListener('click', async () => {
+    $('printOneBtn').disabled = true;
+    try {
+      renderPreview();
+      if (!currentPrices.length) throw new Error('Ajoute au moins un prix avant d’imprimer.');
+      status.textContent = 'Impression de la première étiquette…';
+      await printPair(0);
+      connected = true;
+      status.textContent = 'Commande envoyée. Vérifie le résultat physique : rotation, dimensions, coupe et lisibilité.';
+    } catch(e) {
+      status.textContent = 'Impression non confirmée : ' + (e?.message || e);
+    } finally { $('printOneBtn').disabled = false; }
+  });
+
+  $('printAllBtn').addEventListener('click', async () => {
+    $('printAllBtn').disabled = true;
+    try {
+      renderPreview();
+      if (!currentPrices.length) throw new Error('Ajoute au moins un prix avant d’imprimer.');
+      const count = Math.ceil(currentPrices.length/2);
+      for (let i=0; i<currentPrices.length; i+=2) {
+        status.textContent = 'Impression de l’étiquette ' + (Math.floor(i/2)+1) + ' sur ' + count + '…';
+        await printPair(i);
+      }
+      connected = true;
+      status.textContent = 'Lot terminé. Vérifie le nombre d’étiquettes et le résultat sur papier.';
+    } catch(e) {
+      status.textContent = 'Lot interrompu : ' + (e?.message || e);
+    } finally { $('printAllBtn').disabled = false; }
+  });
+
+  // Public bridge for later integration with the main price-list block:
+  // window.Lamb3rtEtiquettes.setPrices([22, 25, 46, 53])
+  window.Lamb3rtEtiquettes = {
+    setPrices(values) {
+      $('prices').value = (values || []).join(', ');
+      renderPreview();
+    },
+    renderPreview,
+    printAll: async () => {
+      renderPreview();
+      for (let i=0; i<currentPrices.length; i+=2) await printPair(i);
+    }
+  };
+
+  renderPreview();
+})();
+</script>
+</body>
+</html>
