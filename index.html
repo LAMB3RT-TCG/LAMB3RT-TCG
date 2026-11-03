@@ -112,7 +112,7 @@ const micBtn = document.getElementById('micBtn');
 
 try {
   const saved = JSON.parse(localStorage.getItem('lamb3rt_prices_v1') || '[]');
-  if (Array.isArray(saved)) prices = saved.filter(n => typeof n === 'number' && Number.isFinite(n));
+  if (Array.isArray(saved)) prices = saved.filter(n => typeof n === 'number' && Number.isFinite(n) && n >= MIN_PRICE && n <= MAX_PRICE);
 } catch (e) {}
 
 function normalizeWords(text) {
@@ -162,20 +162,36 @@ function frenchNumberWordsToNumber(phrase) {
   return i === w.length ? n : null;
 }
 
+const MIN_PRICE = 10;
+const MAX_PRICE = 999;
+
 function splitFusedPrice(value) {
   const digits = String(value);
-  // Détecte uniquement les grands nombres continus qui pourraient être deux prix fusionnés.
-  if (!/^\d{4,6}$/.test(digits) || Number(digits) <= 200) return null;
-  const candidates = [];
-  for (let cut = 2; cut < digits.length; cut++) {
-    const left = Number(digits.slice(0, cut));
-    const right = Number(digits.slice(cut));
-    if (left >= 15 && left <= 200 && right >= 15 && right <= 200) {
-      candidates.push([left, right]);
+  if (!/^\d{4,9}$/.test(digits) || Number(digits) <= MAX_PRICE) return null;
+  const solutions = [];
+  function walk(pos, parts) {
+    if (solutions.length > 1) return;
+    if (pos === digits.length) { if (parts.length >= 2) solutions.push(parts); return; }
+    for (const width of [2, 3]) {
+      const piece = digits.slice(pos, pos + width);
+      if (piece.length !== width) continue;
+      const n = Number(piece);
+      if (n >= MIN_PRICE && n <= MAX_PRICE) walk(pos + width, [...parts, n]);
     }
   }
-  // Si plusieurs découpages sont possibles, ne devine pas : laisse le texte vérifiable.
-  return candidates.length === 1 ? candidates[0] : null;
+  walk(0, []);
+  return solutions.length === 1 ? solutions[0] : null;
+}
+
+function parseNumericToken(token) {
+  const normalized = String(token).replace(',', '.');
+  const value = Number(normalized);
+  if (!Number.isFinite(value)) return [];
+  if (!normalized.includes('.') && value > MAX_PRICE) {
+    const split = splitFusedPrice(normalized);
+    if (split) return split;
+  }
+  return value >= MIN_PRICE && value <= MAX_PRICE ? [value] : [];
 }
 
 function parsePrices(text) {
@@ -195,28 +211,21 @@ function parsePrices(text) {
   for (const chunk of chunks) {
     const numeric = chunk.match(/^\s*(\d+(?:[.,]\d{1,2})?)\s*$/);
     if (numeric) {
-      const token = numeric[1].replace(',', '.');
-      const value = Number(token);
-      if (Number.isFinite(value) && value >= 0) {
-        const split = !token.includes('.') ? splitFusedPrice(token) : null;
-        if (split) out.push(...split);
-        else out.push(value);
-      }
+      out.push(...parseNumericToken(numeric[1]));
       continue;
     }
 
     // Si le morceau contient plusieurs nombres écrits en chiffres séparés par
     // des espaces, chacun devient un prix distinct (ex. "65 8 12").
     if (/^\s*\d+(?:\s+\d+)+\s*$/.test(chunk)) {
-      chunk.match(/\d+/g).forEach(token => out.push(Number(token)));
+      chunk.match(/\d+/g).forEach(token => out.push(...parseNumericToken(token)));
       continue;
     }
 
     const numericTokens = chunk.match(/\d+(?:[.,]\d{1,2})?/g);
     if (numericTokens && !/[a-z]/i.test(chunk)) {
       numericTokens.forEach(token => {
-        const value = Number(token.replace(',', '.'));
-        if (Number.isFinite(value) && value >= 0) out.push(value);
+        out.push(...parseNumericToken(token));
       });
       continue;
     }
@@ -227,7 +236,7 @@ function parsePrices(text) {
       let found = null, end = i;
       for (let j = Math.min(words.length, i + 5); j > i; j--) {
         const value = frenchNumberWordsToNumber(words.slice(i, j).join(' '));
-        if (value !== null && value >= 0 && value <= 999999) {
+        if (value !== null && value >= MIN_PRICE && value <= MAX_PRICE) {
           found = value; end = j; break;
         }
       }
@@ -236,7 +245,7 @@ function parsePrices(text) {
         // Permet les morceaux mixtes comme "65 huit 12".
         if (/^\d+(?:[.,]\d{1,2})?$/.test(words[i])) {
           const value = Number(words[i].replace(',', '.'));
-          if (Number.isFinite(value)) out.push(value);
+          if (Number.isFinite(value) && value >= MIN_PRICE && value <= MAX_PRICE) out.push(value);
         }
         i++;
       }
