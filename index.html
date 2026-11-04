@@ -257,7 +257,7 @@ function parsePrices(text) {
 }
 
 function money(n) {
-  return Number.isInteger(n) ? String(n) : n.toLocaleString('fr-CA', {minimumFractionDigits:2, maximumFractionDigits:2});
+  return Math.round(n).toString();
 }
 function savePrices() {
   try { localStorage.setItem('lamb3rt_prices_v1', JSON.stringify(prices)); } catch (e) {}
