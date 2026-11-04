@@ -417,10 +417,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
 });
 document.getElementById('fontSize').addEventListener('input', render);
 document.getElementById('perLabel').addEventListener('change', render);
-document.getElementById('printBtn').addEventListener('click', () => {
-  if (!prices.length) { status.textContent = 'Ajoute des prix avant d’imprimer.'; return; }
-  window.print();
-});
+
 
 render();
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
