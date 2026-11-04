@@ -105,18 +105,15 @@
     setStatus('Imprimante déconnectée.');
   }
 
-  function money(value) {
-    const n = Number(value);
+function money(value) {
+  const n = Number(value);
 
-    if (!Number.isFinite(n)) {
-      throw new Error('Prix invalide : ' + value);
-    }
-
-    return n.toLocaleString('fr-CA', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }) + ' $';
+  if (!Number.isFinite(n)) {
+    throw new Error('Prix invalide : ' + value);
   }
+
+  return Math.round(n).toString() + ' $';
+}
 
   // NOUVEAU FORMAT : caractères beaucoup plus gros
   function makeLabelImage(priceA, priceB, fontSize) {
