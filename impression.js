@@ -1,7 +1,7 @@
 
 /*
- * LAMB3RT TCG — Module d'impression NIIMBOT
- * Fichier indépendant : impression.js
+ * LAMB3RT TCG — Impression NIIMBOT D110_M
+ * Version avec caractères agrandis
  */
 (function () {
   'use strict';
@@ -45,18 +45,16 @@
 
     state.driverPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
-
       script.src = DRIVER_URL;
       script.async = true;
 
       script.onload = () => {
         if (window.Niimbot) resolve(window.Niimbot);
-        else reject(new Error('Objet Niimbot introuvable après chargement.'));
+        else reject(new Error('Objet Niimbot introuvable.'));
       };
 
-      script.onerror = () => reject(
-        new Error('Impossible de charger le pilote NIIMBOT. Vérifie Internet.')
-      );
+      script.onerror = () =>
+        reject(new Error('Impossible de charger le pilote NIIMBOT.'));
 
       document.head.appendChild(script);
     }).catch(error => {
@@ -70,7 +68,7 @@
   function checkBluetooth(driver) {
     if (location.protocol !== 'https:' &&
         location.hostname !== 'localhost') {
-      throw new Error('Ouvre l’application depuis son adresse HTTPS.');
+      throw new Error('Ouvre le site depuis HTTPS dans Chrome Android.');
     }
 
     if (!driver.isSupported || !driver.isSupported()) {
@@ -89,7 +87,7 @@
     state.printer = driver.printer || info || null;
     state.connected = true;
 
-    setStatus('NIIMBOT détectée. Identification terminée.');
+    setStatus('NIIMBOT détectée : D110_M. Connexion identifiée.');
 
     return state.printer;
   }
@@ -120,6 +118,7 @@
     }) + ' $';
   }
 
+  // NOUVEAU FORMAT : caractères beaucoup plus gros
   function makeLabelImage(priceA, priceB, fontSize) {
     const source = document.createElement('canvas');
     source.width = 800;
@@ -130,19 +129,35 @@
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, 800, 240);
 
-    ctx.fillStyle = '#111';
+    ctx.fillStyle = '#000';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '800 ' +
-      (Math.max(12, Math.min(34, Number(fontSize) || 18)) * 2) +
-      'px Arial';
 
-    ctx.fillText(money(priceA), 200, 120, 370);
+    // Taille augmentée : environ 2,5 fois l'ancienne taille source.
+    const baseFont = 110;
 
-    if (priceB !== undefined && priceB !== null) {
-      ctx.fillText(money(priceB), 600, 120, 370);
+    function drawPrice(value, centerX) {
+      const text = money(value);
+      let font = baseFont;
+
+      ctx.font = '900 ' + font + 'px Arial';
+
+      // Réduire uniquement si le prix dépasse sa moitié.
+      while (ctx.measureText(text).width > 385 && font > 65) {
+        font -= 3;
+        ctx.font = '900 ' + font + 'px Arial';
+      }
+
+      ctx.fillText(text, centerX, 120);
     }
 
+    drawPrice(priceA, 200);
+
+    if (priceB !== undefined && priceB !== null) {
+      drawPrice(priceB, 600);
+    }
+
+    // Conversion vers le format natif de l'imprimante.
     const printerCanvas = document.createElement('canvas');
     printerCanvas.width = SIZE.w_px;
     printerCanvas.height = SIZE.h_px;
@@ -189,8 +204,10 @@
     state.busy = true;
 
     const opts = options || {};
-    const fontSize = opts.fontSize || 18;
-    const density = Math.max(1, Math.min(5, Number(opts.density) || 3));
+    const density = Math.max(
+      1,
+      Math.min(5, Number(opts.density) || 3)
+    );
 
     const model = Object.assign({}, MODEL, { density });
     const count = Math.ceil(prices.length / 2);
@@ -205,7 +222,7 @@
         const image = makeLabelImage(
           prices[i],
           prices[i + 1],
-          fontSize
+          opts.fontSize
         );
 
         await driver.printImage(image, {
@@ -218,9 +235,12 @@
       state.connected = true;
       state.printer = driver.printer || state.printer;
 
-      setStatus('Impression terminée. Vérifie le résultat sur papier.');
+      setStatus('Impression terminée. Vérifie la taille sur papier.');
 
-      return { labels: count, prices: prices.length };
+      return {
+        labels: count,
+        prices: prices.length
+      };
 
     } finally {
       state.busy = false;
@@ -309,8 +329,8 @@
           const prices = readMainPriceList();
 
           await printPrices(prices, {
-            fontSize: document.getElementById('fontSize')?.value || 18,
-            density: document.getElementById('niimbotDensity').value
+            density: document.getElementById('niimbotDensity').value,
+            fontSize: 22
           });
 
         } catch (error) {
@@ -332,7 +352,10 @@
       busy: state.busy,
       printer: state.printer
     }),
-    config: { model: MODEL, size: SIZE }
+    config: {
+      model: MODEL,
+      size: SIZE
+    }
   };
 
   if (document.readyState === 'loading') {
